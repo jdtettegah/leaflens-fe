@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../ThemeContext';
+import { apiService } from '../../services/api'; // Adjust path if needed
 
 const SignUpScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -24,22 +25,37 @@ const SignUpScreen = ({ navigation }) => {
 
   const { theme } = useContext(ThemeContext);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!firstName || !lastName || !email || !username || !password) {
       Alert.alert('Missing Fields', 'Please fill all required fields.');
       return;
     }
 
-    console.log('Signing up with:', {
-      firstName,
-      middleName: middleName || 'N/A',
-      lastName,
+    const signupData = {
+      first_name: firstName,
+      middle_name: middleName || '',
+      last_name: lastName,
       email,
       username,
       password,
-    });
+    };
 
-    navigation.replace('MainTabs');
+    try {
+      const response = await apiService.register(signupData);
+      console.log('Signup success:', response.data);
+      Alert.alert(
+        'Success',
+        'Account created. Please check your email to verify your account.'
+      );
+      navigation.replace('Login'); // Navigate to login screen
+    } catch (error) {
+      console.error('Signup error:', error.response?.data || error.message);
+      Alert.alert(
+        'Signup Failed',
+        error.response?.data?.message ||
+          'An error occurred during signup. Check email and try again.'
+      );
+    }
   };
 
   return (

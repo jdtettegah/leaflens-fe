@@ -8,6 +8,7 @@ import SignUpScreen from '../screens/SignUpScreen';
 import MainTabs from './MainTabs';
 import ReportScreen from '../screens/ReportScreen';
 import CameraScreen from '../screens/CameraScreen';
+import ChatboxScreen from '../screens/ChatboxScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +37,7 @@ const RootNavigator = () => {
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="Report" component={ReportScreen} />
           <Stack.Screen name="Camera" component={CameraScreen}/>
+          <Stack.Screen name="ChatBox" component={ChatboxScreen}/>
         </>
       )}
     </Stack.Navigator>

@@ -95,14 +95,19 @@ const HomeScreen = () => {
       {/* Recent Diagnosis */}
       <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent diagnosis</Text>
       {[1, 2, 3, 4].map((item, index) => (
-        <View key={index} style={[styles.diagnosisCard, { backgroundColor: theme.card }]}>
+        <TouchableOpacity
+        key={index} 
+        style={[styles.diagnosisCard, {backgroundColor: theme.card}]} 
+        onPress={() => navigation.navigate('Report')}
+       >
+          
           <Image source={require('../../assets/Images/riceImage.png')} style={styles.diagnosisImage} />
           <View style={styles.diagnosisText}>
             <Text style={[styles.cropTitle, { color: theme.text }]}>Rice Crop</Text>
             <Text style={[styles.disease, { color: theme.subtext }]}>Disease: Bacterial blight</Text>
             <Text style={[styles.more, { color: theme.primary }]}>Know more...</Text>
           </View>
-        </View>
+      </TouchableOpacity>
       ))}
     </ScrollView>
   );

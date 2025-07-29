@@ -13,7 +13,6 @@ const ReportScreen = () => {
       <View style={[styles.header, {backgroundColor: theme.background}]}>
         <Ionicons name="arrow-back" size={24} onPress={() => navigation.navigate('MainTabs')} styles={{color: theme.text}} />
         <Text style={[styles.title, {color: theme.text}]}>Rice Crop</Text>
-        <Feather name="share-2" size={20} />
       </View>
 
       {/* Crop Image */}
@@ -38,13 +37,7 @@ const ReportScreen = () => {
         <Text style={[styles.bullet, {color: theme.text}]}>{'\u2022'} Can lead to complete crop loss</Text>
       </View>
 
-      {/* More Images */}
-      <Text style={[styles.sectionTitle, {color: theme.text}]}>More images:</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageRow}>
-        {[1, 2, 3, 4].map((_, i) => (
-          <Image key={i} source={require('../../assets/Images/riceImage.png')} style={styles.smallImage} />
-        ))}
-      </ScrollView>
+      
 
       {/* Preventions */}
       <View style={[styles.preventBox, {backgroundColor: theme.card}]}>
@@ -67,27 +60,11 @@ const ReportScreen = () => {
       </View>
 
       {/* Suggested Pesticides */}
-      <Text style={[styles.sectionTitle, {color: theme.text}]}>Suggested pesticides:</Text>
-      <View style={styles.pesticideRow}>
-        {['Tricyclazole', 'Azoxystrobin', 'Isoprothiolane'].map((name, i) => (
-          <View key={i} style={styles.pesticideBox}>
-            <Image source={require('../../assets/Images/riceImage.png')} style={styles.pesticideImage} />
-            <Text style={[styles.pesticideLabel, {color: theme.text}]}>{name}</Text>
-          </View>
-        ))}
-      </View>
 
       {/* CTA Buttons */}
-      <TouchableOpacity style={styles.greenButton}>
-        <Text style={styles.greenButtonText}>Cultivation tips</Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity style={styles.shareButton}>
-        <Text style={styles.shareButtonText}>Share in groups</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.connectButton}>
-        <Text style={styles.connectButtonText}>Connect to Expert</Text>
+      <TouchableOpacity style={styles.connectButton} onPress={() => navigation.navigate('ChatBox')}>
+        <Text style={styles.connectButtonText}>Connect to AI Expert</Text>
       </TouchableOpacity>
     </ScrollView>
   );

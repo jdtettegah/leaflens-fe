@@ -1,9 +1,12 @@
 import React, { useContext } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
 import { ThemeContext } from '../ThemeContext';
+import {useNavigation} from '@react-navigation/native';
+import { Camera } from 'expo-camera';
 
 const HomeScreen = () => {
   const { theme } = useContext(ThemeContext);
+  const navigation = useNavigation();
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -81,7 +84,10 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={[styles.takePictureButton, { backgroundColor: theme.primary }]} >
+        <TouchableOpacity
+          style={[styles.takePictureButton, { backgroundColor: theme.primary }]}
+          onPress={() => navigation.navigate('Camera')}
+>
           <Text style={styles.takePictureText}>Take picture</Text>
         </TouchableOpacity>
       </View>

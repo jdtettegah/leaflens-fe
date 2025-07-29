@@ -8,6 +8,9 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../ThemeContext';
@@ -27,62 +30,76 @@ const LoginScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
-        style={styles.innerContainer}
+        style={{ flex: 1 }}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 40}
       >
-        <Image
-          source={require('../../assets/Images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={[styles.title, { color: theme.text }]}>Welcome Back!</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={styles.innerContainer}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Image
+              source={require('../../assets/Images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={[styles.title, { color: theme.text }]}>Welcome Back!</Text>
 
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: theme.inputBackground,
-              color: theme.text,
-              borderColor: focusedInput === 'Email' ? theme.primary : theme.border,
-            },
-          ]}
-          placeholder="Email"
-          placeholderTextColor={theme.placeholder}
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          onFocus={() => setFocusedInput('Email')}
-          onBlur={() => setFocusedInput(null)}
-        />
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.inputBackground,
+                  color: theme.text,
+                  borderColor:
+                    focusedInput === 'Email' ? theme.primary : theme.border,
+                },
+              ]}
+              placeholder="Email"
+              placeholderTextColor={theme.placeholder}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              onFocus={() => setFocusedInput('Email')}
+              onBlur={() => setFocusedInput(null)}
+            />
 
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: theme.inputBackground,
-              color: theme.text,
-              borderColor: focusedInput === 'Password' ? theme.primary : theme.border,
-            },
-          ]}
-          placeholder="Password"
-          placeholderTextColor={theme.placeholder}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          onFocus={() => setFocusedInput('Password')}
-          onBlur={() => setFocusedInput(null)}
-        />
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.inputBackground,
+                  color: theme.text,
+                  borderColor:
+                    focusedInput === 'Password' ? theme.primary : theme.border,
+                },
+              ]}
+              placeholder="Password"
+              placeholderTextColor={theme.placeholder}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              onFocus={() => setFocusedInput('Password')}
+              onBlur={() => setFocusedInput(null)}
+            />
 
-        <TouchableOpacity style={[styles.loginButton, { backgroundColor: theme.primary }]} onPress={handleLogin}>
-          <Text style={styles.loginText}>Log In</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.loginButton, { backgroundColor: theme.primary }]}
+              onPress={handleLogin}
+            >
+              <Text style={styles.loginText}>Log In</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-          <Text style={[styles.signupText, { color: theme.text }]}>
-            Don’t have an account? <Text style={{ color: theme.primary }}>Sign up</Text>
-          </Text>
-        </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+              <Text style={[styles.signupText, { color: theme.text }]}>
+                Don’t have an account?{' '}
+                <Text style={{ color: theme.primary }}>Sign up</Text>
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -95,10 +112,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   innerContainer: {
-    flex: 1,
     padding: 24,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    flexGrow: 1,
   },
   logo: {
     height: 150,

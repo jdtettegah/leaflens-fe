@@ -9,9 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../ThemeContext';
+import { apiService } from '../../services/api';
 
 const SignUpScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -24,79 +28,99 @@ const SignUpScreen = ({ navigation }) => {
 
   const { theme } = useContext(ThemeContext);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!firstName || !lastName || !email || !username || !password) {
       Alert.alert('Missing Fields', 'Please fill all required fields.');
       return;
     }
 
-    console.log('Signing up with:', {
-      firstName,
-      middleName: middleName || 'N/A',
-      lastName,
+    const signupData = {
+      first_name: firstName,
+      middle_name: middleName || '',
+      last_name: lastName,
       email,
       username,
       password,
-    });
+    };
 
-    navigation.replace('MainTabs');
+    try {
+      const response = await apiService.register(signupData);
+      Alert.alert(
+        'Success',
+        'Account created. Please check your email to verify your account.'
+      );
+      navigation.replace('Login');
+    } catch (error) {
+      Alert.alert(
+        'Signup Failed',
+        error.response?.data?.message ||
+          'An error occurred during signup. Check email and try again.'
+      );
+    }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
-        style={styles.innerContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
       >
-        <Image
-          source={require('../../assets/Images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <Text style={[styles.title, { color: theme.text }]}>Create an Account</Text>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={styles.innerContainer}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Image
+              source={require('../../assets/Images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={[styles.title, { color: theme.text }]}>Create an Account</Text>
 
-        {[
-          { placeholder: 'First Name *', value: firstName, setter: setFirstName, key: 'firstName' },
-          { placeholder: 'Middle Name (optional)', value: middleName, setter: setMiddleName, key: 'middleName' },
-          { placeholder: 'Last Name *', value: lastName, setter: setLastName, key: 'lastName' },
-          { placeholder: 'Email *', value: email, setter: setEmail, key: 'Email', keyboardType: 'email-address' },
-          { placeholder: 'Username *', value: username, setter: setUsername, key: 'Username' },
-          { placeholder: 'Password *', value: password, setter: setPassword, key: 'Password', secureTextEntry: true },
-        ].map(({ placeholder, value, setter, key, keyboardType, secureTextEntry }) => (
-          <TextInput
-            key={key}
-            style={[
-              styles.input,
-              {
-                backgroundColor: theme.inputBackground,
-                color: theme.text,
-                borderColor: focusedInput === key ? theme.primary : theme.border,
-              },
-            ]}
-            placeholder={placeholder}
-            placeholderTextColor={theme.placeholder}
-            value={value}
-            onChangeText={setter}
-            keyboardType={keyboardType}
-            autoCapitalize="none"
-            secureTextEntry={secureTextEntry}
-            onFocus={() => setFocusedInput(key)}
-            onBlur={() => setFocusedInput(null)}
-          />
-        ))}
+            {[
+              { placeholder: 'First Name *', value: firstName, setter: setFirstName, key: 'firstName' },
+              { placeholder: 'Middle Name (optional)', value: middleName, setter: setMiddleName, key: 'middleName' },
+              { placeholder: 'Last Name *', value: lastName, setter: setLastName, key: 'lastName' },
+              { placeholder: 'Email *', value: email, setter: setEmail, key: 'email', keyboardType: 'email-address' },
+              { placeholder: 'Username *', value: username, setter: setUsername, key: 'username' },
+              { placeholder: 'Password *', value: password, setter: setPassword, key: 'password', secureTextEntry: true },
+            ].map(({ placeholder, value, setter, key, keyboardType, secureTextEntry }) => (
+              <TextInput
+                key={key}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.inputBackground,
+                    color: theme.text,
+                    borderColor: focusedInput === key ? theme.primary : theme.border,
+                  },
+                ]}
+                placeholder={placeholder}
+                placeholderTextColor={theme.placeholder}
+                value={value}
+                onChangeText={setter}
+                keyboardType={keyboardType}
+                autoCapitalize="none"
+                secureTextEntry={secureTextEntry}
+                onFocus={() => setFocusedInput(key)}
+                onBlur={() => setFocusedInput(null)}
+              />
+            ))}
 
-        <TouchableOpacity
-          style={[styles.signUpButton, { backgroundColor: theme.primary }]}
-          onPress={handleSignup}
-        >
-          <Text style={styles.signUpText}>Sign Up</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.signUpButton, { backgroundColor: theme.primary }]}
+              onPress={handleSignup}
+            >
+              <Text style={styles.signUpText}>Sign Up</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={[styles.loginLink, { color: theme.text }]}>
-            Already have an account? <Text style={{ color: theme.primary }}>Log in</Text>
-          </Text>
-        </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={[styles.loginLink, { color: theme.text }]}>
+                Already have an account? <Text style={{ color: theme.primary }}>Log in</Text>
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -109,10 +133,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   innerContainer: {
-    flex: 1,
     padding: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 40, // allows space for keyboard
   },
   logo: {
     height: 150,

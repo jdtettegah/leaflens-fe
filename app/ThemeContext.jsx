@@ -5,14 +5,14 @@ export const ThemeContext = createContext();
 
 const lightTheme = {
   mode: 'light',
-  background: '#e6f9ef',
+  background: '#F1F9F4',
   text: '#000',
   inputBackground: '#fff',
   border: '#ccc',
   primary: '#004d00',
   placeholder: '#888',
   icon: '#000',
-  card: '#e9f8e7',
+  card: '#E6F4EA',
   subtext: '#444444',
   statusBarStyle: 'dark-content',
   weatherBoxBackground:  '#fff3e0',

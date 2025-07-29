@@ -7,9 +7,12 @@ import {
   FlatList,
   StyleSheet,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme} from "react-native";
 import { ThemeContext } from '../ThemeContext';
 
 const ChatboxScreen = () => {
@@ -29,7 +32,7 @@ const ChatboxScreen = () => {
 
   const handleSendMessage = () => {
     if (inputText.trim() === '') return;
-  
+
     const newMessage = {
       _id: Date.now().toString(),
       text: inputText,
@@ -39,10 +42,10 @@ const ChatboxScreen = () => {
         name: 'User',
       },
     };
-  
-    setMessages(previousMessages => [newMessage, ...previousMessages]);
+
+    setMessages((previousMessages) => [newMessage, ...previousMessages]);
     setInputText('');
-  
+
     // Simulate bot reply after 1.5 seconds
     setTimeout(() => {
       const botReply = {
@@ -54,101 +57,96 @@ const ChatboxScreen = () => {
           name: 'PlantBot',
         },
       };
-  
-      setMessages(previousMessages => [botReply, ...previousMessages]);
-    }, 1500);
-   };
 
-   const handleNewChat = () => {
+      setMessages((previousMessages) => [botReply, ...previousMessages]);
+    }, 1500);
+  };
+
+  const handleNewChat = () => {
     setMessages([]);
   };
-  
-
-  
-  
-  
 
   const renderWelcomeScreen = () => (
-    <View style={[styles.welcomeContainer, {backgroundColor: theme.background}]}>
-      <View style={[styles.header, {backgroundColor: theme.background}]}>
-        <Image source={require('../../assets/Images/lensAi.png')} style={styles.lensAi}/>
-
+    <View style={[styles.welcomeContainer, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <Image source={require('../../assets/Images/lensAi.png')} style={styles.lensAi} />
       </View>
-      <Text style={[styles.welcomeTitle, {color: theme.text}]}>What can I help with?</Text>
+      <Text style={[styles.welcomeTitle, { color: theme.text }]}>What can I help with?</Text>
       <View style={styles.actionRow}>
-        <TouchableOpacity style={[styles.actionButton, {backgroundColor: theme.card}]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.card }]}>
           <Ionicons name="image-outline" size={20} color="#22c55e" />
-          <Text style={[styles.actionText, {color: theme.text}]}>Capture image</Text>
+          <Text style={[styles.actionText, { color: theme.text }]}>Capture image</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, {backgroundColor: theme.card}]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.card }]}>
           <Ionicons name="create-outline" size={20} color="#d946ef" />
-          <Text style={[styles.actionText, {color: theme.text}]}>Write about a plant disease</Text>
+          <Text style={[styles.actionText, { color: theme.text }]}>Write about a plant disease</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.actionRow}>
-        <TouchableOpacity style={[styles.actionButton, {backgroundColor: theme.card}]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.card }]}>
           <Ionicons name="document-text-outline" size={20} color="#f97316" />
-          <Text style={[styles.actionText, {color: theme.text}]}>Read about a plant</Text>
+          <Text style={[styles.actionText, { color: theme.text }]}>Read about a plant</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, {backgroundColor: theme.card}]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: theme.card }]}>
           <Ionicons name="ellipsis-horizontal" size={20} color="#6366f1" />
-          <Text style={[styles.actionText, {color: theme.text}]}>More</Text>
+          <Text style={[styles.actionText, { color: theme.text }]}>More</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
-      <View style={[styles.header, {backgroundColor: theme.background}]}>
-        <Image source={require('../../assets/Images/lensAi.png')} style={styles.lensAI}/>
-
-      </View>
-
-const renderChatMessages = () => (
-  <View style={[{ flex: 1 }, {backgroundColor: theme.background}]}>
-    <View style={[styles.chatHeaderRow, {backgroundColor: theme.background}]}>
-      <Image source={require('../../assets/Images/lensAi.png')} style={styles.chatLogo} />
-      <TouchableOpacity onPress={handleNewChat} style={styles.newChatButton}>
-        <Ionicons name="refresh-circle" size={24} color="#22c55e" />
-        <Text style={[styles.newChatText, {color:theme.text}]}>New Chat</Text>
-      </TouchableOpacity>
-    </View>
-    <FlatList
-      data={messages}
-      inverted
-      keyExtractor={(_, index) => index.toString()}
-      contentContainerStyle={{ paddingVertical: 10 }}
-      renderItem={({ item }) => (
-        <View
-          style={[
-            styles.messageContainer,
-            item.user._id === 1 ? styles.userMsg : styles.botMsg,
-          ]}
-        >
-          <Text style={styles.messageText}>{item.text}</Text>
-        </View>
-      )}
-    />
-  </View>
-
-);
-
-
-  return (
-    <View style={[styles.container, {backgroundColor: theme.background}]}>
-      {messages.length === 0 ? renderWelcomeScreen() : renderChatMessages()}
-      <View style={[styles.inputContainer, {backgroundColor: theme.background}]}>
-        <TextInput
-          value={inputText}
-          onChangeText={setInputText}
-          style={styles.input}
-          placeholder="Ask anything"
-          placeholderTextColor="#999"
-        />
-        <TouchableOpacity onPress={handleSendMessage}>
-          <Ionicons name="send" size={24} color="#22c55e" style={styles.sendIcon} />
+  const renderChatMessages = () => (
+    <View style={[{ flex: 1 }, { backgroundColor: theme.background }]}>
+      <View style={[styles.chatHeaderRow, { backgroundColor: theme.background }]}>
+        <Image source={require('../../assets/Images/lensAi.png')} style={styles.chatLogo} />
+        <TouchableOpacity onPress={handleNewChat} style={styles.newChatButton}>
+          <Ionicons name="refresh-circle" size={24} color="#22c55e" />
+          <Text style={[styles.newChatText, { color: theme.text }]}>New Chat</Text>
         </TouchableOpacity>
       </View>
+      <FlatList
+        data={messages}
+        inverted
+        keyExtractor={(_, index) => index.toString()}
+        contentContainerStyle={{ paddingVertical: 10 }}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.messageContainer,
+              item.user._id === 1 ? styles.userMsg : styles.botMsg,
+            ]}
+          >
+            <Text style={styles.messageText}>{item.text}</Text>
+          </View>
+        )}
+      />
     </View>
+  );
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          {messages.length === 0 ? renderWelcomeScreen() : renderChatMessages()}
+          <View style={[styles.inputContainer, { backgroundColor: theme.background }]}>
+            <TextInput
+              value={inputText}
+              onChangeText={setInputText}
+              style={styles.input}
+              placeholder="Ask anything"
+              placeholderTextColor="#999"
+            />
+            <TouchableOpacity onPress={handleSendMessage}>
+              <Ionicons name="send" size={24} color="#22c55e" style={styles.sendIcon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -163,17 +161,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header:{
+  header: {
     marginTop: 20,
   },
   chatHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginHorizontal: 5
-    
+    marginHorizontal: 5,
   },
-  
   newChatButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -181,22 +177,15 @@ const styles = StyleSheet.create({
     marginTop: -25,
     marginRight: 10,
   },
-  
   newChatText: {
     marginLeft: 4,
     fontSize: 14,
     color: 'Black',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
   },
-  
-  lensAi:{
+  lensAi: {
     height: 60,
     width: 150,
-  },
-  lensAI:{
-    height: 60,
-    width: 150,
-
   },
   welcomeTitle: {
     fontSize: 22,
@@ -226,7 +215,6 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f5f9',
     borderRadius: 14,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -259,7 +247,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: '#e0e7ff',
     borderTopLeftRadius: 0,
-    marginLeft: 10, 
+    marginLeft: 10,
   },
   messageText: {
     color: '#111',
@@ -269,11 +257,6 @@ const styles = StyleSheet.create({
     height: 120,
     resizeMode: 'contain',
     alignSelf: 'center',
-    marginTop: -25
-  },
-  
-  chatHeader: {
-    marginTop: -40,
-    marginHorizontal: -20,
+    marginTop: -25,
   },
 });

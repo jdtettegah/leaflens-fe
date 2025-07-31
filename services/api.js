@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseURL = () => {
   if (__DEV__) {
-    return 'https://ac5f3f6d401c.ngrok-free.app'; // ngrok forwarding url 
+    return 'https://9781757325b2.ngrok-free.app'; // ngrok forwarding url 
   }
   return 'https://your-production-api.com'; // production url 
 };
@@ -70,7 +70,9 @@ apiClient.interceptors.response.use(
 
 export const apiService = {
   register: (data) => apiClient.post('/signup/', data),
+
   login: (data) => apiClient.post('/login/', data),
+
   getCurrentUser: async () => {
     const token = await AsyncStorage.getItem('accessToken');
     const response = await apiClient.get('/user/', {
@@ -88,5 +90,32 @@ export const apiService = {
     }
 
     return user;
+  },
+
+  startChat: async (message) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.post('/chat/new/', { message }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  continueChat: async (sessionId, message) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.post(`/chat/${sessionId}/`, { message }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  getChatHistory: async () => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.get('/chat/history/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 };

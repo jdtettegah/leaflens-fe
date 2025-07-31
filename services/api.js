@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 const getBaseURL = () => {
   if (__DEV__) {
-    return 'https://c404798ead30.ngrok-free.app';
+    return 'https://c404798ead30.ngrok-free.app'; // ngrok forwarding url 
   }
   return 'https://your-production-api.com'; // production url 
 };
@@ -69,8 +69,5 @@ apiClient.interceptors.response.use(
 
 export const apiService = {
   register: (data) => apiClient.post('/signup/', data),
-  
-  // Add other API methods here as needed
   login: (data) => apiClient.post('/login/', data),
-  // etc...
 };

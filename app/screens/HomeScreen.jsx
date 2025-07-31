@@ -1,12 +1,28 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
 import { ThemeContext } from '../ThemeContext';
-import {useNavigation} from '@react-navigation/native';
-import { Camera } from 'expo-camera';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HomeScreen = () => {
   const { theme } = useContext(ThemeContext);
   const navigation = useNavigation();
+  const [firstName, setFirstName] = useState('');
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setFirstName(user.first_name || '');
+        }
+      } catch (error) {
+        console.error('Error loading user from AsyncStorage:', error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -18,11 +34,13 @@ const HomeScreen = () => {
           <Image style={styles.logo} source={require('../../assets/Images/leaflensLogo.png')} />
           <Image style={styles.plogo} source={require('../../assets/Images/plogo.png')} />
         </View>
-        <Text style={[styles.greeting, { color: theme.text }]}>Welcome, Johnson</Text>
+        <Text style={[styles.greeting, { color: theme.text }]}>
+          Hello{firstName ? `, ${firstName}` : ', there'}!
+        </Text>
       </View>
 
       {/* Weather */}
-      <View style={[styles.weatherBox, {backgroundColor: theme.weatherBoxBackground}]}>
+      <View style={[styles.weatherBox, { backgroundColor: theme.weatherBoxBackground }]}>
         <View>
           <Text style={[styles.weatherText, { color: theme.text }]}>Today, 13 Mar</Text>
           <Text style={[styles.weatherSubText, { color: theme.subtext }]}>Clear · 24°C / 20°C</Text>
@@ -35,51 +53,56 @@ const HomeScreen = () => {
         <Text style={[styles.helpTitle, { color: theme.text }]}>Help your crop</Text>
         <View style={styles.steps}>
           <View style={styles.stepcontainer}>
-            <Image 
+            <Image
               style={styles.capture}
               source={
-                theme.mode === 'dark' 
-                ? require('../../assets/Images/capture-white.png')
-                : require('../../assets/Images/capture.png')
-                } />
+                theme.mode === 'dark'
+                  ? require('../../assets/Images/capture-white.png')
+                  : require('../../assets/Images/capture.png')
+              }
+            />
             <Text style={[styles.stepText, { color: theme.text }]}>Take the picture</Text>
           </View>
 
-          <Image 
-              style={styles.forward}
-              source={
-                theme.mode === 'dark' 
+          <Image
+            style={styles.forward}
+            source={
+              theme.mode === 'dark'
                 ? require('../../assets/Images/forward-white.png')
                 : require('../../assets/Images/forward.png')
-                } />
+            }
+          />
 
           <View style={styles.stepcontainer}>
-          <Image 
+            <Image
               style={styles.analyse}
               source={
-                theme.mode === 'dark' 
-                ? require('../../assets/Images/scan-white.png')
-                : require('../../assets/Images/scan.png')
-                } />
+                theme.mode === 'dark'
+                  ? require('../../assets/Images/scan-white.png')
+                  : require('../../assets/Images/scan.png')
+              }
+            />
             <Text style={[styles.stepText, { color: theme.text }]}>Analyse Disease</Text>
           </View>
 
-          <Image 
-              style={styles.forward}
-              source={
-                theme.mode === 'dark' 
+          <Image
+            style={styles.forward}
+            source={
+              theme.mode === 'dark'
                 ? require('../../assets/Images/forward-white.png')
                 : require('../../assets/Images/forward.png')
-                } />
+            }
+          />
 
           <View style={styles.stepcontainer}>
-          <Image 
+            <Image
               style={styles.diagnose}
               source={
-                theme.mode === 'dark' 
-                ? require('../../assets/Images/diagnosisIcon-white.png')
-                : require('../../assets/Images/diagnosisIcon.png')
-                } />
+                theme.mode === 'dark'
+                  ? require('../../assets/Images/diagnosisIcon-white.png')
+                  : require('../../assets/Images/diagnosisIcon.png')
+              }
+            />
             <Text style={[styles.stepText, { color: theme.text }]}>Check the Report</Text>
           </View>
         </View>
@@ -87,7 +110,7 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={[styles.takePictureButton, { backgroundColor: theme.primary }]}
           onPress={() => navigation.navigate('Camera')}
->
+        >
           <Text style={styles.takePictureText}>Take picture</Text>
         </TouchableOpacity>
       </View>
@@ -96,25 +119,23 @@ const HomeScreen = () => {
       <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent diagnosis</Text>
       {[1, 2, 3, 4].map((item, index) => (
         <TouchableOpacity
-        key={index} 
-        style={[styles.diagnosisCard, {backgroundColor: theme.card}]} 
-        onPress={() => navigation.navigate('Report')}
-       >
-          
+          key={index}
+          style={[styles.diagnosisCard, { backgroundColor: theme.card }]}
+          onPress={() => navigation.navigate('Report')}
+        >
           <Image source={require('../../assets/Images/riceImage.png')} style={styles.diagnosisImage} />
           <View style={styles.diagnosisText}>
             <Text style={[styles.cropTitle, { color: theme.text }]}>Rice Crop</Text>
             <Text style={[styles.disease, { color: theme.subtext }]}>Disease: Bacterial blight</Text>
             <Text style={[styles.more, { color: theme.primary }]}>Know more...</Text>
           </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
       ))}
     </ScrollView>
   );
 };
 
 export default HomeScreen;
-
 
 
 const styles = StyleSheet.create({

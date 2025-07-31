@@ -13,11 +13,12 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../ThemeContext';
 import { apiService } from '../../services/api';
-import { Ionicons } from '@expo/vector-icons'; // Eye icon from expo
+import { Ionicons } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -64,11 +65,15 @@ const LoginScreen = ({ navigation }) => {
         await AsyncStorage.setItem('refreshToken', response.data.message.refresh);
         navigation.replace('MainTabs');
       } else {
-        alert('Login failed. Please check your credentials.');
+        Alert.alert('Login Failed', 'Please check your credentials.');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      alert('An error occurred while logging in.');
+      let message = 'An error occurred while logging in.';
+      if (error.response && error.response.data && error.response.data.non_field_errors) {
+        const errMsg = error.response.data.non_field_errors[0];
+        message = errMsg.charAt(0).toUpperCase() + errMsg.slice(1);
+      }
+      Alert.alert('Login Failed', message);
     } finally {
       setLoading(false);
     }

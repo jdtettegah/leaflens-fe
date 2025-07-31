@@ -43,19 +43,57 @@ const SignUpScreen = ({ navigation }) => {
       password,
     };
 
+    console.log('=== SIGNUP DEBUG INFO ===');
+    console.log('Signup data:', signupData);
+    console.log('Platform:', Platform.OS);
+    console.log('__DEV__:', __DEV__);
+
     try {
+      console.log('Making signup request...');
       const response = await apiService.register(signupData);
+      console.log('✅ Signup successful!');
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
+      
       Alert.alert(
         'Success',
         'Account created. Please check your email to verify your account.'
       );
       navigation.replace('Login');
     } catch (error) {
-      Alert.alert(
-        'Signup Failed',
-        error.response?.data?.message ||
-          'An error occurred during signup. Check email and try again.'
-      );
+      console.log('❌ Signup failed!');
+      console.log('Error type:', error.code);
+      console.log('Error message:', error.message);
+      
+      if (error.response) {
+        // Server responded with error status
+        console.log('Server error response:');
+        console.log('- Status:', error.response.status);
+        console.log('- Status text:', error.response.statusText);
+        console.log('- Headers:', error.response.headers);
+        console.log('- Data:', error.response.data);
+      } else if (error.request) {
+        // Request was made but no response received
+        console.log('Network error - no response received:');
+        console.log('- Request object:', error.request);
+        console.log('- This usually means network connectivity issues');
+      } else {
+        // Something else happened
+        console.log('Request setup error:', error.message);
+      }
+
+      // Enhanced error message for user
+      let userMessage;
+      if (error.response) {
+        userMessage = error.response?.data?.message || 
+                     'Server error. Please try again.';
+      } else if (error.request) {
+        userMessage = 'Network error - could not reach server. Check your connection.';
+      } else {
+        userMessage = 'An unexpected error occurred. Please try again.';
+      }
+
+      Alert.alert('Signup Failed', userMessage);
     }
   };
 

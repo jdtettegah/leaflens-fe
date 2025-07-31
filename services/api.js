@@ -1,49 +1,76 @@
-// services/api.js
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-const BASE_URL = 'http://10.41.252.254:8000'; // Replace with your IP
+const getBaseURL = () => {
+  if (__DEV__) {
+    return 'https://c404798ead30.ngrok-free.app';
+  }
+  return 'https://your-production-api.com'; // production url 
+};
 
-const api = axios.create({
+const BASE_URL = getBaseURL();
+
+// Debug logging
+console.log('=== API SERVICE DEBUG ===');
+console.log('Platform:', Platform.OS);
+console.log('Development mode:', __DEV__);
+console.log('Base URL:', BASE_URL);
+console.log('========================');
+
+// Create axios instance with debugging
+const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // 30 seconds timeout 
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
 
-api.interceptors.request.use(
-  async (config) => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        config.headers.Authorization = `Token ${token}`;
-      }
-    } catch (error) {
-      console.log('Error getting token:', error);
-    }
+// Request interceptor for debugging
+apiClient.interceptors.request.use(
+  (config) => {
+    console.log('🚀 Making API request:');
+    console.log('- Method:', config.method?.toUpperCase());
+    console.log('- URL:', config.url);
+    console.log('- Full URL:', `${config.baseURL}${config.url}`);
+    console.log('- Data:', config.data);
+    console.log('- Headers:', config.headers);
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.log('❌ Request interceptor error:', error);
+    return Promise.reject(error);
+  }
 );
 
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      await AsyncStorage.multiRemove(['token', 'user_id']);
+// Response interceptor for debugging
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('✅ API response received:');
+    console.log('- Status:', response.status);
+    console.log('- Data:', response.data);
+    return response;
+  },
+  (error) => {
+    console.log('❌ API response error:');
+    if (error.response) {
+      console.log('- Status:', error.response.status);
+      console.log('- Data:', error.response.data);
+    } else if (error.request) {
+      console.log('- No response received');
+      console.log('- Request:', error.request);
+    } else {
+      console.log('- Error:', error.message);
     }
     return Promise.reject(error);
   }
 );
 
 export const apiService = {
-  get: (endpoint) => api.get(endpoint),
-  post: (endpoint, data) => api.post(endpoint, data),
-  put: (endpoint, data) => api.put(endpoint, data),
-  delete: (endpoint) => api.delete(endpoint),
-  login: (credentials) => api.post('/login/', credentials),
-  register: (userData) => api.post('/signup/', userData),
+  register: (data) => apiClient.post('/signup/', data),
+  
+  // Add other API methods here as needed
+  login: (data) => apiClient.post('/login/', data),
+  // etc...
 };
-
-export default api;

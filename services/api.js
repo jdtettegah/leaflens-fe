@@ -1,9 +1,10 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseURL = () => {
   if (__DEV__) {
-    return 'https://c404798ead30.ngrok-free.app'; // ngrok forwarding url 
+    return 'https://ac5f3f6d401c.ngrok-free.app'; // ngrok forwarding url 
   }
   return 'https://your-production-api.com'; // production url 
 };
@@ -70,4 +71,22 @@ apiClient.interceptors.response.use(
 export const apiService = {
   register: (data) => apiClient.post('/signup/', data),
   login: (data) => apiClient.post('/login/', data),
+  getCurrentUser: async () => {
+    const token = await AsyncStorage.getItem('accessToken');
+    const response = await apiClient.get('/user/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const user = response.data.user;
+
+    if (user) {
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+    } else {
+      console.warn('User not found in response:', response.data);
+    }
+
+    return user;
+  },
 };

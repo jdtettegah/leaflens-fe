@@ -61,15 +61,21 @@ const LoginScreen = ({ navigation }) => {
       });
 
       if (response.data.success) {
-        await AsyncStorage.setItem('accessToken', response.data.message.access);
-        await AsyncStorage.setItem('refreshToken', response.data.message.refresh);
+        const { access, refresh } = response.data.message;
+
+        await AsyncStorage.setItem('accessToken', access);
+        await AsyncStorage.setItem('refreshToken', refresh);
+
+        // Get current user and save to AsyncStorage
+        const user = await apiService.getCurrentUser();
+
         navigation.replace('MainTabs');
       } else {
         Alert.alert('Login Failed', 'Please check your credentials.');
       }
     } catch (error) {
       let message = 'An error occurred while logging in.';
-      if (error.response && error.response.data && error.response.data.non_field_errors) {
+      if (error.response?.data?.non_field_errors) {
         const errMsg = error.response.data.non_field_errors[0];
         message = errMsg.charAt(0).toUpperCase() + errMsg.slice(1);
       }
@@ -105,8 +111,7 @@ const LoginScreen = ({ navigation }) => {
                 {
                   backgroundColor: theme.inputBackground,
                   color: theme.text,
-                  borderColor:
-                    focusedInput === 'Email' ? theme.primary : theme.border,
+                  borderColor: focusedInput === 'Email' ? theme.primary : theme.border,
                 },
               ]}
               placeholder="Email"
@@ -124,7 +129,7 @@ const LoginScreen = ({ navigation }) => {
             />
             {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-            {/* Password Input with Eye Icon */}
+            {/* Password Input */}
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[
@@ -132,8 +137,7 @@ const LoginScreen = ({ navigation }) => {
                   {
                     backgroundColor: theme.inputBackground,
                     color: theme.text,
-                    borderColor:
-                      focusedInput === 'Password' ? theme.primary : theme.border,
+                    borderColor: focusedInput === 'Password' ? theme.primary : theme.border,
                   },
                 ]}
                 placeholder="Password"

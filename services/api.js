@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseURL = () => {
   if (__DEV__) {
-    return 'https://7a599c9e79d7.ngrok-free.app'; // ngrok forwarding url 
+    return 'https://004232efd4fc.ngrok-free.app'; // ngrok forwarding url 
   }
   return 'https://your-production-api.com'; // production url 
 };
@@ -133,6 +133,25 @@ export const apiService = {
     return apiClient.get(`/chat/session/${sessionId}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  predictDisease: async (imageUri) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    
+    // Create form data for image upload
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'plant_image.jpg',
+    });
+
+    return apiClient.post('/predict/', formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
       },
     });
   },

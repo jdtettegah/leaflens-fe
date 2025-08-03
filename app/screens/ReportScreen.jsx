@@ -3,7 +3,7 @@ import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, Dimensions
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { ThemeContext } from '../ThemeContext';
 import {useNavigation, useRoute} from '@react-navigation/native';
-import { apiService } from '../../services/api';
+import { apiService, getBaseURLForImages } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -61,7 +61,7 @@ const ReportScreen = () => {
           if (imagePath.startsWith('http')) {
             return imagePath;
           }
-          const baseURL = 'https://004232efd4fc.ngrok-free.app';
+          const baseURL = getBaseURLForImages();
           return `${baseURL}${imagePath}`;
         };
         

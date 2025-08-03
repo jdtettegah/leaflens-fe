@@ -24,6 +24,9 @@ const ChatboxScreen = () => {
   const [messages, setMessages] = useState([]);
   const [sessionId, setSessionId] = useState(null);
   const [isSending, setIsSending] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const { theme } = useContext(ThemeContext);
   const flatListRef = useRef(null);
   const insets = useSafeAreaInsets();
@@ -126,6 +129,38 @@ const ChatboxScreen = () => {
     setInputText(question);
   };
 
+  // Fetch chat history from backend
+  const fetchChatHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const response = await apiService.getChatHistory();
+      if (response.data?.success) {
+        console.log('Chat history data:', JSON.stringify(response.data.messages, null, 2));
+        setChatHistory(response.data.messages || []);
+      }
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      Alert.alert('Error', 'Failed to load chat history');
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Handle chat history icon press
+  const handleChatHistoryPress = () => {
+    if (!showChatHistory) {
+      fetchChatHistory();
+    }
+    setShowChatHistory(!showChatHistory);
+  };
+
+  // Load a specific chat session
+  const loadChatSession = (sessionId) => {
+    setSessionId(sessionId);
+    setShowChatHistory(false);
+    // You might want to load the messages for this session here
+  };
+
   // Optimized message component
   const ChatMessage = React.memo(({ message }) => {
     const isUser = message.user._id === 1;
@@ -187,36 +222,52 @@ const ChatboxScreen = () => {
   // Chat messages screen
   const renderChatMessages = () => (
     <View style={[{ flex: 1 }, { backgroundColor: theme.background }]}>
-             <View style={[styles.chatHeaderRow, { 
+                    <View style={[styles.chatHeaderRow, { 
          backgroundColor: theme.background,
          paddingTop: (insets.top + 10) / 3 
        }]}>
+                           <TouchableOpacity 
+          onPress={handleChatHistoryPress}
+          style={styles.chatHistoryButton}
+          disabled={isLoadingHistory}
+        >
+          {isLoadingHistory ? (
+            <ActivityIndicator size="small" color={theme.primary || '#22c55e'} />
+          ) : (
+            <Ionicons 
+              name="time-outline" 
+              size={24} 
+              color={theme.primary || '#22c55e'} 
+            />
+          )}
+        </TouchableOpacity>
+        
         <Image 
           source={require('../../assets/Images/lensAi.png')} 
           style={styles.chatLogo} 
           resizeMode="contain"
         />
-        <TouchableOpacity 
-          onPress={handleNewChat} 
-          style={styles.newChatButton}
-          disabled={isSending}
-        >
-          {isSending ? (
-            <ActivityIndicator size="small" color="#999" />
-          ) : (
-            <>
-              <Ionicons 
-                name="refresh-circle" 
-                size={24} 
-                color={theme.primary || '#22c55e'} 
-              />
-              <Text style={[styles.newChatText, { color: theme.text }]}>
-                New Chat
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+         <TouchableOpacity 
+           onPress={handleNewChat} 
+           style={styles.newChatButton}
+           disabled={isSending}
+         >
+           {isSending ? (
+             <ActivityIndicator size="small" color="#999" />
+           ) : (
+             <>
+               <Ionicons 
+                 name="refresh-circle" 
+                 size={24} 
+                 color={theme.primary || '#22c55e'} 
+               />
+               <Text style={[styles.newChatText, { color: theme.text }]}>
+                 New Chat
+               </Text>
+             </>
+           )}
+         </TouchableOpacity>
+       </View>
       
       <FlatList
         ref={flatListRef}
@@ -231,9 +282,70 @@ const ChatboxScreen = () => {
         removeClippedSubviews={Platform.OS === 'android'}
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
-      />
-    </View>
-  );
+             />
+       
+               {/* Chat History Overlay */}
+        {showChatHistory && (
+          <View style={[
+            styles.chatHistoryOverlay, 
+            { 
+              backgroundColor: theme.background,
+              paddingTop: 0
+            }
+          ]}>
+           <View style={styles.chatHistoryHeader}>
+             <Text style={[styles.chatHistoryTitle, { color: theme.text }]}>
+               Chat History
+             </Text>
+             <TouchableOpacity 
+               onPress={() => setShowChatHistory(false)}
+               style={styles.closeButton}
+             >
+               <Ionicons name="close" size={24} color={theme.text} />
+             </TouchableOpacity>
+           </View>
+           
+           {isLoadingHistory ? (
+             <View style={styles.loadingContainer}>
+               <ActivityIndicator size="large" color={theme.primary || '#22c55e'} />
+               <Text style={[styles.loadingText, { color: theme.subtext }]}>
+                 Loading chat history...
+               </Text>
+             </View>
+           ) : chatHistory.length === 0 ? (
+             <View style={styles.emptyContainer}>
+               <Ionicons name="chatbubble-outline" size={48} color={theme.subtext} />
+               <Text style={[styles.emptyText, { color: theme.subtext }]}>
+                 No previous chats found
+               </Text>
+             </View>
+           ) : (
+                           <FlatList
+                data={chatHistory}
+                keyExtractor={(item) => item.session_id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.chatHistoryItem, { borderBottomColor: theme.border }]}
+                    onPress={() => loadChatSession(item.session_id)}
+                  >
+                    <View style={styles.chatHistoryItemContent}>
+                      <Text style={[styles.chatHistoryItemTitle, { color: theme.text }]}>
+                        Chat Session {item.session_id}
+                      </Text>
+                      <Text style={[styles.chatHistoryItemSubtitle, { color: theme.subtext }]}>
+                        {item.messages?.length || 0} messages
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={false}
+              />
+           )}
+         </View>
+       )}
+     </View>
+   );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -318,7 +430,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingBottom: 3,
+    paddingVertical: 8,
+    minHeight: 60,
+  },
+  chatHistoryButton: {
+    padding: 5,
   },
   newChatButton: {
     flexDirection: 'row',
@@ -409,6 +525,70 @@ const styles = StyleSheet.create({
   chatLogo: {
     width: 120,
     height: 50,
+  },
+  chatHistoryOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  chatHistoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    minHeight: 80,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  chatHistoryTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    marginTop: 10,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  chatHistoryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+  },
+  chatHistoryItemContent: {
+    flex: 1,
+  },
+  chatHistoryItemTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  chatHistoryItemSubtitle: {
+    fontSize: 14,
   },
 });
 

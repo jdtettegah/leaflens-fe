@@ -155,45 +155,55 @@ const ChatboxScreen = () => {
   };
 
   // Load a specific chat session
-  const loadChatSession = (sessionId) => {
+  const loadChatSession = async (sessionId) => {
     try {
-      // Find the chat session in the existing chat history
-      const selectedSession = chatHistory.find(session => session.session_id === sessionId);
+      setIsLoadingHistory(true);
+      const response = await apiService.getChatSession(sessionId);
       
-      if (selectedSession && selectedSession.messages) {
-        // Convert backend message format to frontend format and sort by actual timestamps
-        const convertedMessages = selectedSession.messages
-          .map((msg, index) => ({
-            _id: msg.id ? `${msg.id}-${msg.sender}` : `${Date.now()}-${index}-${msg.sender}`,
-            text: msg.message,
-            createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-            user: {
-              _id: msg.sender === 'user' ? 1 : 2,
-              name: msg.sender === 'user' ? 'User' : 'PlantBot',
-            },
-          }))
-          .sort((a, b) => {
-            // Sort by actual timestamp, ensuring proper chronological order
-            const timeA = a.createdAt.getTime();
-            const timeB = b.createdAt.getTime();
-            return timeA - timeB; // Oldest first (first message sent by user will be first)
-          });
+             if (response.data?.success) {
+         // Convert backend message format to frontend format
+         let convertedMessages = response.data.messages.map((msg, index) => ({
+           _id: msg.id ? `${msg.id}-${msg.sender}` : `${Date.now()}-${index}-${msg.sender}`,
+           text: msg.message,
+           createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+           user: {
+             _id: msg.sender === 'user' ? 1 : 2,
+             name: msg.sender === 'user' ? 'User' : 'PlantBot',
+           },
+         }));
+         
+         // Check if messages are in reverse chronological order (newest first)
+         // If so, reverse them to get chronological order (oldest first) for inverted FlatList
+         if (convertedMessages.length > 1) {
+           const firstTime = convertedMessages[0].createdAt.getTime();
+           const lastTime = convertedMessages[convertedMessages.length - 1].createdAt.getTime();
+           if (firstTime > lastTime) {
+             console.log('Messages are in reverse order, reversing...');
+             convertedMessages = convertedMessages.reverse();
+           }
+         }
         
-        console.log('Loaded messages in chronological order:', convertedMessages.map(msg => ({
-          sender: msg.user.name,
-          text: msg.text.substring(0, 30) + '...',
-          timestamp: msg.createdAt.toISOString()
-        })));
+                 console.log('Loaded messages from API:', convertedMessages.map(msg => ({
+           sender: msg.user.name,
+           text: msg.text.substring(0, 30) + '...',
+           timestamp: msg.createdAt.toISOString()
+         })));
+         
+         console.log('Message order check:');
+         console.log('First message:', convertedMessages[0]?.text?.substring(0, 20) + '...');
+         console.log('Last message:', convertedMessages[convertedMessages.length - 1]?.text?.substring(0, 20) + '...');
         
         setMessages(convertedMessages);
         setSessionId(sessionId);
         setShowChatHistory(false);
       } else {
-        Alert.alert('Error', 'Chat session not found');
+        Alert.alert('Error', response.data?.message || 'Failed to load chat session');
       }
     } catch (error) {
       console.error('Error loading chat session:', error);
       Alert.alert('Error', 'Failed to load chat session');
+    } finally {
+      setIsLoadingHistory(false);
     }
   };
 

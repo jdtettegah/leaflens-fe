@@ -5,6 +5,7 @@ import {useRouter} from 'expo-router';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import { ThemeContext } from '../ThemeContext';
 import { apiService, getBaseURLForImages } from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 const Diagnosis = () => {
   const {theme} = useContext(ThemeContext);
@@ -84,6 +85,41 @@ const Diagnosis = () => {
     return `${baseURL}${imagePath}`;
   };
 
+  const handleDeletePrediction = async (predictionId, cropName) => {
+    Alert.alert(
+      'Delete Diagnosis',
+      `Are you sure you want to delete the diagnosis for ${cropName}?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await apiService.deletePrediction(predictionId);
+              
+              if (response.data.success) {
+                // Remove the deleted prediction from the local state
+                setPredictions(prevPredictions => 
+                  prevPredictions.filter(prediction => prediction.id !== predictionId)
+                );
+                Alert.alert('Success', 'Diagnosis deleted successfully!');
+              } else {
+                Alert.alert('Error', response.data.message || 'Failed to delete diagnosis');
+              }
+            } catch (error) {
+              console.error('Error deleting prediction:', error);
+              Alert.alert('Error', 'Failed to delete diagnosis. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <ScrollView style={[styles.container, {backgroundColor: theme.background}]} showsVerticalScrollIndicator={false}>
       <StatusBar backgroundColor={theme.background} barStyle={'dark-content'}/>
@@ -123,37 +159,48 @@ const Diagnosis = () => {
           const imageUrl = getImageUrl(prediction.image);
           
           return (
-            <TouchableOpacity
+            <View
               key={prediction.id || index} 
               style={[styles.diagnosisCard, {backgroundColor: theme.card}]} 
-              onPress={() => navigation.navigate('Report', {
-                diagnosis: {
-                  cropName: crop,
-                  disease: disease,
-                  confidence: 0.95, // Default confidence since not provided in API
-                  imageUri: imageUrl,
-                  predictionId: prediction.id,
-                  timestamp: prediction.timestamp
-                }
-              })}
             >
-              <Image 
-                source={imageUrl ? {uri: imageUrl} : require('../../assets/Images/riceImage.png')} 
-                style={styles.diagnosisImage} 
-              />
-              <View style={styles.diagnosisText}>
-                <Text style={[styles.cropTitle, { color: theme.text }]}>
-                  {crop}
-                </Text>
-                <Text style={[styles.disease, { color: theme.subtext }]}>
-                  Disease: {disease}
-                </Text>
-                <Text style={[styles.timestamp, { color: theme.subtext }]}>
-                  {formatDate(prediction.timestamp)}
-                </Text>
-                <Text style={[styles.more, { color: theme.primary }]}>Know more...</Text>
-              </View>
-            </TouchableOpacity> 
+              <TouchableOpacity
+                style={styles.diagnosisContent}
+                onPress={() => navigation.navigate('Report', {
+                  diagnosis: {
+                    cropName: crop,
+                    disease: disease,
+                    confidence: 0.95, // Default confidence since not provided in API
+                    imageUri: imageUrl,
+                    predictionId: prediction.id,
+                    timestamp: prediction.timestamp
+                  }
+                })}
+              >
+                <Image 
+                  source={imageUrl ? {uri: imageUrl} : require('../../assets/Images/riceImage.png')} 
+                  style={styles.diagnosisImage} 
+                />
+                <View style={styles.diagnosisText}>
+                  <Text style={[styles.cropTitle, { color: theme.text }]}>
+                    {crop}
+                  </Text>
+                  <Text style={[styles.disease, { color: theme.subtext }]}>
+                    Disease: {disease}
+                  </Text>
+                  <Text style={[styles.timestamp, { color: theme.subtext }]}>
+                    {formatDate(prediction.timestamp)}
+                  </Text>
+                  <Text style={[styles.more, { color: theme.primary }]}>Know more...</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeletePrediction(prediction.id, crop)}
+              >
+                <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+              </TouchableOpacity>
+            </View> 
           );
         })
       )}
@@ -234,6 +281,17 @@ const styles = StyleSheet.create({
     elevation: 4,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.03)',
+  },
+  diagnosisContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
   },
   diagnosisImage: {
     width: 70,

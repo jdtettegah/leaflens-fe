@@ -11,6 +11,9 @@ const getBaseURL = () => {
 
 const BASE_URL = getBaseURL();
 
+// Export the base URL for use in other components
+export const getBaseURLForImages = () => BASE_URL;
+
 // Debug logging
 console.log('=== API SERVICE DEBUG ===');
 console.log('Platform:', Platform.OS);
@@ -152,6 +155,24 @@ export const apiService = {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  getAllPredictions: async () => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.get('/predict/all/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  getPredictionById: async (predictionId) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.get(`/predict/${predictionId}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
     });
   },

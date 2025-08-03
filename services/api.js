@@ -127,4 +127,13 @@ export const apiService = {
       },
     });
   },
+
+  getChatSession: async (sessionId) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.get(`/chat/session/${sessionId}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
 };

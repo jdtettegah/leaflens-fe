@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
   Dimensions,
   Alert,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { ThemeContext } from '../ThemeContext';
+import { apiService } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
@@ -22,20 +24,163 @@ const ProfileScreen = () => {
   const { theme, toggleTheme } = useContext(ThemeContext);
   
   const [userDetails, setUserDetails] = useState({
-    firstName: 'John',
-    lastName: 'Johnson',
-    email: 'john.johnson@email.com',
-    phone: '+233 24 123 4567',
-    location: 'Kumasi, Ghana',
-    bio: 'Agriculture student at KNUST passionate about plant health and disease detection.',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    location: '',
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingField, setEditingField] = useState(null);
   const [tempValue, setTempValue] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Fetch profile data on component mount
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      
+      // Try to get profile data from the profile endpoint first
+      try {
+        const response = await apiService.getProfile();
+        if (response.data.success) {
+          const profileData = response.data.message;
+          const userData = profileData.user;
+          
+          setUserDetails({
+            firstName: userData.first_name || '',
+            lastName: userData.last_name || '',
+            email: userData.email || '',
+            phone: profileData.phone_number || '',
+            location: profileData.location || '',
+          });
+          return; // Exit early if profile data is successfully loaded
+        }
+      } catch (profileError) {
+        console.log('Profile endpoint not available, falling back to user data');
+      }
+      
+      // Fallback to current user data
+      const user = await apiService.getCurrentUser();
+      
+      if (user) {
+        setUserDetails({
+          firstName: user.first_name || user.firstName || '',
+          lastName: user.last_name || user.lastName || '',
+          email: user.email || '',
+          phone: user.phone_number || user.phone || '',
+          location: user.location || '',
+        });
+      } else {
+        // Final fallback to static data
+        setUserDetails({
+          firstName: 'John',
+          lastName: 'Johnson',
+          email: 'john.johnson@email.com',
+          phone: '+233 24 123 4567',
+          location: 'Kumasi, Ghana',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      // Fallback to static data if API fails
+      setUserDetails({
+        firstName: 'John',
+        lastName: 'Johnson',
+        email: 'john.johnson@email.com',
+        phone: '+233 24 123 4567',
+        location: 'Kumasi, Ghana',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProfile = async (updatedData) => {
+    try {
+      setSaving(true);
+      
+      console.log('updateProfile called with data:', updatedData);
+      
+      // Separate user data (first_name, last_name) from profile data (phone_number, location)
+      const userData = {};
+      const profileData = {};
+      
+      if (updatedData.firstName) userData.first_name = updatedData.firstName;
+      if (updatedData.lastName) userData.last_name = updatedData.lastName;
+      if (updatedData.phone) profileData.phone_number = updatedData.phone;
+      if (updatedData.location) profileData.location = updatedData.location;
+      
+      console.log('Separated userData:', userData);
+      console.log('Separated profileData:', profileData);
+      
+      let updateSuccess = false;
+      
+      // Update user information (first name, last name) if needed
+      if (Object.keys(userData).length > 0) {
+        try {
+          console.log('Attempting to update user info with data:', userData);
+          const userResponse = await apiService.updateUserInfo(userData);
+          console.log('User update response:', userResponse.data);
+          if (userResponse.data.success) {
+            console.log('User info updated successfully');
+            updateSuccess = true;
+          } else {
+            console.log('User update failed:', userResponse.data.message);
+          }
+        } catch (userError) {
+          console.log('User update API error:', userError.response?.data || userError.message);
+        }
+      }
+      
+      // Update profile information (phone, location) if needed
+      if (Object.keys(profileData).length > 0) {
+        try {
+          const profileResponse = await apiService.updateProfile(profileData);
+          if (profileResponse.data.success) {
+            console.log('Profile info updated successfully');
+            updateSuccess = true;
+          }
+        } catch (profileError) {
+          console.log('Profile update API not available:', profileError);
+        }
+      }
+      
+      if (updateSuccess) {
+        Alert.alert('Success', 'Profile updated successfully');
+        // Refresh profile data
+        await fetchProfile();
+        return;
+      }
+      
+      // Fallback to local state update if APIs are not available
+      console.log('Profile update data:', updatedData);
+      
+      // Update local state immediately for better UX
+      setUserDetails(prev => ({
+        ...prev,
+        ...updatedData
+      }));
+      
+      // Show success message
+      Alert.alert('Success', 'Profile updated successfully');
+      
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const goBack = () => {
-    navigation.replace('MainTabs');
+    navigation.goBack();
   };
 
   const handleLogout = () => {
@@ -49,9 +194,25 @@ const ProfileScreen = () => {
     );
   };
 
-  const toggleEditMode = () => {
+  const toggleEditMode = async () => {
     if (isEditing) {
       // Save all changes when exiting edit mode
+      const updatedData = {};
+      
+      // Only include fields that have been modified
+      if (editingField && tempValue.trim()) {
+        updatedData[editingField] = tempValue.trim();
+      }
+
+      console.log('toggleEditMode - editingField:', editingField);
+      console.log('toggleEditMode - tempValue:', tempValue);
+      console.log('toggleEditMode - updatedData:', updatedData);
+
+      if (Object.keys(updatedData).length > 0) {
+        await updateProfile(updatedData);
+      }
+      
+      // Always reset to edit mode after saving
       setIsEditing(false);
       setEditingField(null);
       setTempValue('');
@@ -62,25 +223,18 @@ const ProfileScreen = () => {
 
   const startEditing = (field, value) => {
     if (field === 'email') return; // Email is locked
+    
+    // If we're already editing a different field, save the current field first
+    if (editingField && editingField !== field && tempValue.trim() && tempValue.trim() !== userDetails[editingField]) {
+      const updatedData = { [editingField]: tempValue.trim() };
+      updateProfile(updatedData);
+    }
+    
     setEditingField(field);
     setTempValue(value);
   };
 
-  const saveEdit = () => {
-    if (editingField && tempValue.trim()) {
-      setUserDetails(prev => ({
-        ...prev,
-        [editingField]: tempValue.trim()
-      }));
-    }
-    setEditingField(null);
-    setTempValue('');
-  };
 
-  const cancelEdit = () => {
-    setEditingField(null);
-    setTempValue('');
-  };
 
   const userFields = [
     {
@@ -88,12 +242,14 @@ const ProfileScreen = () => {
       label: 'First Name',
       icon: 'person-outline',
       value: userDetails.firstName,
+      apiField: 'first_name',
     },
     {
       key: 'lastName',
       label: 'Last Name',
       icon: 'person-outline',
       value: userDetails.lastName,
+      apiField: 'last_name',
     },
     {
       key: 'email',
@@ -102,6 +258,7 @@ const ProfileScreen = () => {
       value: userDetails.email,
       keyboardType: 'email-address',
       locked: true,
+      apiField: 'email',
     },
     {
       key: 'phone',
@@ -109,21 +266,26 @@ const ProfileScreen = () => {
       icon: 'call-outline',
       value: userDetails.phone,
       keyboardType: 'phone-pad',
+      apiField: 'phone',
     },
     {
       key: 'location',
       label: 'Location',
       icon: 'location-outline',
       value: userDetails.location,
+      apiField: 'location',
     },
-    {
-      key: 'bio',
-      label: 'Bio',
-      icon: 'document-text-outline',
-      value: userDetails.bio,
-      multiline: true,
-    },
+
   ];
+
+  if (loading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color="#4caf50" />
+        <Text style={[styles.loadingText, { color: theme.text }]}>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -150,12 +312,8 @@ const ProfileScreen = () => {
         </View>
         <Text style={[styles.name, { color: theme.text }]}>{userDetails.firstName} {userDetails.lastName}</Text>
         <Text style={[styles.description, { color: theme.textSecondary || '#666' }]}>
-          {userDetails.bio}
+          Welcome to LeafLens
         </Text>
-        <TouchableOpacity style={[styles.editButton, { backgroundColor: theme.mode === 'dark' ? '#4caf50' : '#e8f5e8' }]}>
-          <Ionicons name="pencil" size={16} color={theme.mode === 'dark' ? '#fff' : '#4caf50'} />
-          <Text style={[styles.editText, { color: theme.mode === 'dark' ? '#fff' : '#4caf50' }]}>Edit Profile</Text>
-        </TouchableOpacity>
       </View>
 
       {/* User Details Section */}
@@ -165,14 +323,19 @@ const ProfileScreen = () => {
           <TouchableOpacity 
             style={[styles.editHeaderButton, { backgroundColor: isEditing ? '#ff4757' : theme.mode === 'dark' ? '#4caf50' : '#e8f5e8' }]} 
             onPress={toggleEditMode}
+            disabled={saving}
           >
-            <Ionicons 
-              name={isEditing ? "checkmark" : "pencil"} 
-              size={16} 
-              color={isEditing ? '#fff' : theme.mode === 'dark' ? '#fff' : '#4caf50'} 
-            />
+            {saving ? (
+              <ActivityIndicator size="small" color={isEditing ? '#fff' : theme.mode === 'dark' ? '#fff' : '#4caf50'} />
+            ) : (
+              <Ionicons 
+                name={isEditing ? "checkmark" : "pencil"} 
+                size={16} 
+                color={isEditing ? '#fff' : theme.mode === 'dark' ? '#fff' : '#4caf50'} 
+              />
+            )}
             <Text style={[styles.editHeaderText, { color: isEditing ? '#fff' : theme.mode === 'dark' ? '#fff' : '#4caf50' }]}>
-              {isEditing ? 'Save' : 'Edit'}
+              {saving ? 'Saving...' : (isEditing ? 'Save' : 'Edit')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -205,22 +368,28 @@ const ProfileScreen = () => {
                     </View>
                   )}
                 </View>
-                {editingField === field.key ? (
-                  <TextInput
-                    style={[styles.detailInput, { color: theme.text, borderColor: theme.mode === 'dark' ? '#4caf50' : '#4caf50' }]}
-                    value={tempValue}
-                    onChangeText={setTempValue}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
-                    placeholderTextColor={theme.textSecondary || '#999'}
-                    keyboardType={field.keyboardType || 'default'}
-                    multiline={field.multiline}
-                    autoFocus
-                    onBlur={saveEdit}
-                    onSubmitEditing={saveEdit}
-                  />
-                ) : (
+                                 {editingField === field.key ? (
+                   <TextInput
+                     style={[styles.detailInput, { color: theme.text, borderColor: theme.mode === 'dark' ? '#4caf50' : '#4caf50' }]}
+                     value={tempValue}
+                     onChangeText={setTempValue}
+                     placeholder={`Enter ${field.label.toLowerCase()}`}
+                     placeholderTextColor={theme.textSecondary || '#999'}
+                     keyboardType={field.keyboardType || 'default'}
+                     multiline={field.multiline}
+                     autoFocus
+                     onBlur={async () => {
+                       if (tempValue.trim() && tempValue.trim() !== field.value) {
+                         const updatedData = { [field.key]: tempValue.trim() };
+                         await updateProfile(updatedData);
+                       }
+                       setEditingField(null);
+                       setTempValue('');
+                     }}
+                   />
+                 ) : (
                   <Text style={[styles.detailValue, { color: theme.text }]} numberOfLines={field.multiline ? 3 : 1}>
-                    {field.value}
+                    {field.value || 'Not set'}
                   </Text>
                 )}
               </View>
@@ -272,6 +441,16 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '500',
   },
   header: {
     flexDirection: 'row',

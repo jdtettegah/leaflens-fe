@@ -25,6 +25,7 @@ const ProfileScreen = () => {
   
   const [userDetails, setUserDetails] = useState({
     firstName: '',
+    middleName: '',
     lastName: '',
     email: '',
     phone: '',
@@ -53,13 +54,14 @@ const ProfileScreen = () => {
           const profileData = response.data.message;
           const userData = profileData.user;
           
-          setUserDetails({
-            firstName: userData.first_name || '',
-            lastName: userData.last_name || '',
-            email: userData.email || '',
-            phone: profileData.phone_number || '',
-            location: profileData.location || '',
-          });
+                     setUserDetails({
+             firstName: userData.first_name || '',
+             middleName: userData.middle_name || '',
+             lastName: userData.last_name || '',
+             email: userData.email || '',
+             phone: profileData.phone_number || '',
+             location: profileData.location || '',
+           });
           return; // Exit early if profile data is successfully loaded
         }
       } catch (profileError) {
@@ -70,17 +72,19 @@ const ProfileScreen = () => {
       const user = await apiService.getCurrentUser();
       
       if (user) {
-        setUserDetails({
-          firstName: user.first_name || user.firstName || '',
-          lastName: user.last_name || user.lastName || '',
-          email: user.email || '',
-          phone: user.phone_number || user.phone || '',
-          location: user.location || '',
-        });
+                 setUserDetails({
+           firstName: user.first_name || user.firstName || '',
+           middleName: user.middle_name || user.middleName || '',
+           lastName: user.last_name || user.lastName || '',
+           email: user.email || '',
+           phone: user.phone_number || user.phone || '',
+           location: user.location || '',
+         });
       } else {
         // Final fallback to static data
         setUserDetails({
           firstName: 'John',
+          middleName: 'Michael',
           lastName: 'Johnson',
           email: 'john.johnson@email.com',
           phone: '+233 24 123 4567',
@@ -92,6 +96,7 @@ const ProfileScreen = () => {
       // Fallback to static data if API fails
       setUserDetails({
         firstName: 'John',
+        middleName: 'Michael',
         lastName: 'Johnson',
         email: 'john.johnson@email.com',
         phone: '+233 24 123 4567',
@@ -113,6 +118,7 @@ const ProfileScreen = () => {
       const profileData = {};
       
       if (updatedData.firstName) userData.first_name = updatedData.firstName;
+      if (updatedData.middleName) userData.middle_name = updatedData.middleName;
       if (updatedData.lastName) userData.last_name = updatedData.lastName;
       if (updatedData.phone) profileData.phone_number = updatedData.phone;
       if (updatedData.location) profileData.location = updatedData.location;
@@ -245,6 +251,13 @@ const ProfileScreen = () => {
       apiField: 'first_name',
     },
     {
+      key: 'middleName',
+      label: 'Middle Name',
+      icon: 'person-outline',
+      value: userDetails.middleName,
+      apiField: 'middle_name',
+    },
+    {
       key: 'lastName',
       label: 'Last Name',
       icon: 'person-outline',
@@ -310,7 +323,9 @@ const ProfileScreen = () => {
           />
           <View style={styles.onlineIndicator} />
         </View>
-        <Text style={[styles.name, { color: theme.text }]}>{userDetails.firstName} {userDetails.lastName}</Text>
+                 <Text style={[styles.name, { color: theme.text }]}>
+           {userDetails.firstName} {userDetails.middleName ? userDetails.middleName + ' ' : ''}{userDetails.lastName}
+         </Text>
         <Text style={[styles.description, { color: theme.textSecondary || '#666' }]}>
           Welcome to LeafLens
         </Text>

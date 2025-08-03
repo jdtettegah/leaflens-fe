@@ -30,10 +30,10 @@ const ChatboxScreen = () => {
 
   // Sample quick questions for the welcome screen
   const quickQuestions = [
-    "How do I care for a Monstera plant?",
-    "What's wrong with my plant's yellow leaves?",
-    "Best indoor plants for low light?",
-    "How often should I water my succulents?"
+    "What is blight disease?",
+    "What is the best way to water my plants?",
+    "What is the best way to fertilize my plants?",
+    "What is the best way to prune my plants?"
   ];
 
   // Handle sending a message
@@ -56,7 +56,7 @@ const ChatboxScreen = () => {
       }
 
       const botMsg = createMessage(
-        response.data?.response || "I'm sorry, I didn't get that. Could you rephrase?", 
+        processGeminiResponse(response.data?.response) || "I'm sorry, I didn't get that. Could you rephrase?", 
         2, 
         'PlantBot'
       );
@@ -72,6 +72,23 @@ const ChatboxScreen = () => {
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Helper function to process Gemini API response and remove asterisks
+  const processGeminiResponse = (text) => {
+    if (!text) return text;
+    
+    // Remove asterisks used for bold formatting
+    let processedText = text.replace(/\*\*(.*?)\*\*/g, '$1');
+    
+    // Also handle single asterisks for italic formatting
+    processedText = processedText.replace(/\*(.*?)\*/g, '$1');
+    
+    // Handle any other markdown-like formatting that might come from Gemini
+    processedText = processedText.replace(/`(.*?)`/g, '$1'); // Remove backticks for code
+    processedText = processedText.replace(/_(.*?)_/g, '$1'); // Remove underscores for italic
+    
+    return processedText;
   };
 
   // Helper function to create message objects
@@ -170,10 +187,10 @@ const ChatboxScreen = () => {
   // Chat messages screen
   const renderChatMessages = () => (
     <View style={[{ flex: 1 }, { backgroundColor: theme.background }]}>
-      <View style={[styles.chatHeaderRow, { 
-        backgroundColor: theme.background,
-        paddingTop: insets.top + 10 
-      }]}>
+             <View style={[styles.chatHeaderRow, { 
+         backgroundColor: theme.background,
+         paddingTop: (insets.top + 10) / 3 
+       }]}>
         <Image 
           source={require('../../assets/Images/lensAi.png')} 
           style={styles.chatLogo} 
@@ -231,15 +248,15 @@ const ChatboxScreen = () => {
           android: 20 
         })}
       >
-        <View style={[
-          styles.inputContainer, 
-          { 
-            backgroundColor: theme.inputBg || theme.background,
-            borderColor: theme.inputBorder || '#d1d5db',
-            marginBottom: insets.bottom,
-            marginHorizontal: 10,
-          }
-        ]}>
+                 <View style={[
+           styles.inputContainer, 
+           { 
+             backgroundColor: theme.inputBg || theme.background,
+             borderColor: theme.inputBorder || '#d1d5db',
+             marginBottom: insets.bottom / 2,
+             marginHorizontal: 10,
+           }
+         ]}>
           <TextInput
             value={inputText}
             onChangeText={setInputText}
@@ -301,13 +318,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingBottom: 10,
+    paddingBottom: 3,
   },
   newChatButton: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 20,
-    paddingVertical: 6,
+    paddingVertical: 2,
     paddingHorizontal: 10,
   },
   newChatText: {

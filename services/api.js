@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseURL = () => {
   if (__DEV__) {
-    return 'https://004232efd4fc.ngrok-free.app'; // ngrok forwarding url 
+    return 'https://8631292dd4e0.ngrok-free.app'; // ngrok forwarding url 
   }
   return 'https://your-production-api.com'; // production url 
 };
@@ -171,6 +171,15 @@ export const apiService = {
   getPredictionById: async (predictionId) => {
     const token = await AsyncStorage.getItem('accessToken');
     return apiClient.get(`/predict/${predictionId}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  deletePrediction: async (predictionId) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.delete(`/predict/${predictionId}/delete/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

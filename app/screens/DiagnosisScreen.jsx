@@ -28,7 +28,14 @@ const Diagnosis = () => {
        <TouchableOpacity
         key={index} 
         style={[styles.diagnosisCard, {backgroundColor: theme.card}]} 
-        onPress={() => navigation.navigate('Report')}
+        onPress={() => navigation.navigate('Report', {
+          diagnosis: {
+            cropName: 'Rice Crop',
+            disease: 'Bacterial blight',
+            confidence: 0.95,
+            imageUri: null // Will use static image
+          }
+        })}
        >
           
           <Image source={require('../../assets/Images/riceImage.png')} style={styles.diagnosisImage} />

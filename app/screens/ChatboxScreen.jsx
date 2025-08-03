@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   FlatList,
+  ScrollView,
   StyleSheet,
   Image,
   KeyboardAvoidingView,
@@ -27,9 +28,25 @@ const ChatboxScreen = () => {
   const [showChatHistory, setShowChatHistory] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const { theme } = useContext(ThemeContext);
   const flatListRef = useRef(null);
   const insets = useSafeAreaInsets();
+
+  // Scroll to bottom when new messages arrive
+  const scrollToBottom = useCallback(() => {
+    if (flatListRef.current && messages.length > 0) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  }, [messages.length]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      const timer = setTimeout(scrollToBottom, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [messages.length, scrollToBottom]);
 
   // Sample quick questions for the welcome screen
   const quickQuestions = [
@@ -270,40 +287,66 @@ const ChatboxScreen = () => {
         </Text>
       </View>
     );
+  }, (prevProps, nextProps) => {
+    // Custom comparison for better performance
+    return prevProps.message._id === nextProps.message._id &&
+           prevProps.message.text === nextProps.message.text;
   });
 
   const renderMessage = useCallback(({ item }) => <ChatMessage message={item} />, []);
 
   // Welcome screen with quick questions
   const renderWelcomeScreen = () => (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={[styles.welcomeContainer, { backgroundColor: theme.background }]}>
-        <View style={[styles.header, { backgroundColor: theme.background }]}>
-          <Image 
-            source={require('../../assets/Images/lensAi.png')} 
-            style={styles.lensAi} 
-            resizeMode="contain"
-          />
+    <ScrollView 
+      style={[styles.welcomeContainer, { backgroundColor: theme.background }]}
+      contentContainerStyle={styles.welcomeScrollContent}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View>
+          <View style={[styles.header, { backgroundColor: theme.background }]}>
+            <Image 
+              source={require('../../assets/Images/lensAi.png')} 
+              style={styles.lensAi} 
+              resizeMode="contain"
+            />
+          </View>
+          
+          <View style={styles.welcomeContent}>
+            <Text style={[styles.welcomeTitle, { color: theme.text }]}>
+              How can I help with your plants today?
+            </Text>
+            <Text style={[styles.welcomeSubtitle, { color: theme.subtext }]}>
+              Ask me anything about plant care, diseases, or gardening tips
+            </Text>
+          </View>
+          
+          <View style={styles.quickQuestionsContainer}>
+            <Text style={[styles.quickQuestionsLabel, { color: theme.subtext }]}>
+              Quick Questions
+            </Text>
+            {quickQuestions.map((question, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.quickQuestionButton, { backgroundColor: theme.quickQuestionBg || '#f8fafc' }]}
+                onPress={() => handleQuickQuestion(question)}
+              >
+                <Ionicons 
+                  name="chatbubble-outline" 
+                  size={16} 
+                  color={theme.primary || '#22c55e'} 
+                  style={styles.questionIcon}
+                />
+                <Text style={[styles.quickQuestionText, { color: theme.text }]}>
+                  {question}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-        <Text style={[styles.welcomeTitle, { color: theme.text }]}>
-          How can I help with your plants today?
-        </Text>
-        
-        <View style={styles.quickQuestionsContainer}>
-          {quickQuestions.map((question, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.quickQuestionButton, { backgroundColor: theme.quickQuestionBg || '#f3f4f6' }]}
-              onPress={() => handleQuickQuestion(question)}
-            >
-              <Text style={[styles.quickQuestionText, { color: theme.text }]}>
-                {question}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
+    </ScrollView>
   );
 
   // Chat messages screen
@@ -356,20 +399,53 @@ const ChatboxScreen = () => {
          </TouchableOpacity>
        </View>
       
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        inverted
-        keyExtractor={(item) => item._id}
-        renderItem={renderMessage}
-        contentContainerStyle={{ paddingVertical: 10 }}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews={Platform.OS === 'android'}
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-             />
+             <FlatList
+         ref={flatListRef}
+         data={messages}
+         inverted
+         keyExtractor={(item) => item._id}
+         renderItem={renderMessage}
+         contentContainerStyle={{ 
+           paddingVertical: 20,
+           paddingHorizontal: 5,
+           flexGrow: 1,
+           justifyContent: messages.length === 0 ? 'center' : 'flex-start'
+         }}
+         initialNumToRender={15}
+         maxToRenderPerBatch={15}
+         windowSize={10}
+         removeClippedSubviews={true}
+         keyboardDismissMode="interactive"
+         showsVerticalScrollIndicator={false}
+         scrollEventThrottle={16}
+         decelerationRate="fast"
+         bounces={true}
+         overScrollMode="always"
+         maintainVisibleContentPosition={{
+           minIndexForVisible: 0,
+           autoscrollToTopThreshold: 10
+         }}
+         onScrollToIndexFailed={() => {}}
+         getItemLayout={(data, index) => ({
+           length: 80, // Approximate height of each message
+           offset: 80 * index,
+           index,
+         })}
+         onScroll={(event) => {
+           const offsetY = event.nativeEvent.contentOffset.y;
+           setShowScrollButton(offsetY < -100);
+         }}
+       />
+       
+       {/* Scroll to bottom button */}
+       {showScrollButton && messages.length > 5 && (
+         <TouchableOpacity
+           style={[styles.scrollButton, { backgroundColor: theme.primary || '#22c55e' }]}
+           onPress={scrollToBottom}
+         >
+           <Ionicons name="chevron-down" size={20} color="#fff" />
+         </TouchableOpacity>
+       )}
        
                {/* Chat History Overlay */}
         {showChatHistory && (
@@ -453,18 +529,19 @@ const ChatboxScreen = () => {
    );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Main content area */}
-      {messages.length === 0 ? renderWelcomeScreen() : renderChatMessages()}
-      
-      {/* Input container with keyboard avoidance */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.select({ 
-          ios: insets.bottom + 10, 
-          android: 20 
-        })}
-      >
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {/* Main content area */}
+        {messages.length === 0 ? renderWelcomeScreen() : renderChatMessages()}
+        
+        {/* Input container with keyboard avoidance */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.select({ 
+            ios: insets.bottom + 10, 
+            android: 20 
+          })}
+        >
                  <View style={[
            styles.inputContainer, 
            { 
@@ -474,25 +551,29 @@ const ChatboxScreen = () => {
              marginHorizontal: 10,
            }
          ]}>
-          <TextInput
-            value={inputText}
-            onChangeText={setInputText}
-            style={[
-              styles.input, 
-              { 
-                color: theme.inputText || theme.text || '#111',
-                maxHeight: 120,
-              }
-            ]}
-            placeholder="Message PlantBot..."
-            placeholderTextColor={theme.placeholder || '#999'}
-            autoCapitalize="sentences"
-            multiline
-            editable={!isSending}
-            onSubmitEditing={handleSendMessage}
-            returnKeyType="send"
-            blurOnSubmit={false}
-          />
+                     <TextInput
+             value={inputText}
+             onChangeText={setInputText}
+             style={[
+               styles.input, 
+               { 
+                 color: theme.inputText || theme.text || '#111',
+                 maxHeight: 120,
+               }
+             ]}
+             placeholder="Message PlantBot..."
+             placeholderTextColor={theme.placeholder || '#999'}
+             autoCapitalize="sentences"
+             autoCorrect={true}
+             spellCheck={true}
+             textContentType="none"
+             multiline
+             editable={!isSending}
+             onSubmitEditing={handleSendMessage}
+             returnKeyType="send"
+             blurOnSubmit={false}
+             keyboardType="default"
+           />
           
           <TouchableOpacity 
             onPress={handleSendMessage}
@@ -508,11 +589,12 @@ const ChatboxScreen = () => {
                 color={inputText.trim() === '' ? '#999' : theme.primary || '#22c55e'} 
               />
             )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
-  );
+                     </TouchableOpacity>
+         </View>
+       </KeyboardAvoidingView>
+     </View>
+     </TouchableWithoutFeedback>
+   );
 };
 
 const styles = StyleSheet.create({
@@ -522,13 +604,18 @@ const styles = StyleSheet.create({
   },
   welcomeContainer: {
     flex: 1,
-    justifyContent: 'flex-start',
+  },
+  welcomeScrollContent: {
+    flexGrow: 1,
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
   },
   header: {
     marginTop: 20,
     alignItems: 'center',
+    marginBottom: 40,
   },
   chatHeaderRow: {
     flexDirection: 'row',
@@ -556,26 +643,57 @@ const styles = StyleSheet.create({
   lensAi: {
     height: 80,
     width: 180,
-    marginBottom: 30,
+  },
+  welcomeContent: {
+    alignItems: 'center',
+    marginBottom: 40,
+    paddingHorizontal: 10,
   },
   welcomeTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 30,
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 12,
     textAlign: 'center',
+    lineHeight: 36,
+    letterSpacing: -0.5,
+  },
+  welcomeSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 22,
+    opacity: 0.8,
   },
   quickQuestionsContainer: {
     width: '100%',
     marginTop: 20,
   },
+  quickQuestionsLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   quickQuestionButton: {
-    padding: 15,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 18,
+    borderRadius: 16,
     marginBottom: 12,
     width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  questionIcon: {
+    marginRight: 12,
   },
   quickQuestionText: {
     fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 20,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -704,6 +822,22 @@ const styles = StyleSheet.create({
   },
   chatHistoryItemSubtitle: {
     fontSize: 14,
+  },
+  scrollButton: {
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 100,
   },
 });
 

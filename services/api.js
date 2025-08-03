@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseURL = () => {
   if (__DEV__) {
-    return 'https://8631292dd4e0.ngrok-free.app'; // ngrok forwarding url 
+    return 'https://1a1688dd8d6d.ngrok-free.app'; // ngrok forwarding url 
   }
   return 'https://your-production-api.com'; // production url 
 };
@@ -180,6 +180,34 @@ export const apiService = {
   deletePrediction: async (predictionId) => {
     const token = await AsyncStorage.getItem('accessToken');
     return apiClient.delete(`/predict/${predictionId}/delete/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Profile management endpoints
+  getProfile: async () => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.get('/profiles/me/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  updateProfile: async (profileData) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.patch('/profiles/update/me/', profileData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  updateUserInfo: async (userData) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.patch('/update-info/', userData, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

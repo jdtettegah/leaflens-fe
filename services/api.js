@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getBaseURL = () => {
   if (__DEV__) {
-    return 'https://9781757325b2.ngrok-free.app'; // ngrok forwarding url 
+    return 'https://7a599c9e79d7.ngrok-free.app'; // ngrok forwarding url 
   }
   return 'https://your-production-api.com'; // production url 
 };
@@ -113,6 +113,15 @@ export const apiService = {
   getChatHistory: async () => {
     const token = await AsyncStorage.getItem('accessToken');
     return apiClient.get('/chat/history/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  deleteChatSession: async (sessionId) => {
+    const token = await AsyncStorage.getItem('accessToken');
+    return apiClient.delete(`/chat/${sessionId}/delete/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

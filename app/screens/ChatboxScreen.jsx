@@ -156,9 +156,86 @@ const ChatboxScreen = () => {
 
   // Load a specific chat session
   const loadChatSession = (sessionId) => {
-    setSessionId(sessionId);
-    setShowChatHistory(false);
-    // You might want to load the messages for this session here
+    try {
+      // Find the chat session in the existing chat history
+      const selectedSession = chatHistory.find(session => session.session_id === sessionId);
+      
+      if (selectedSession && selectedSession.messages) {
+        // Convert backend message format to frontend format and sort by actual timestamps
+        const convertedMessages = selectedSession.messages
+          .map((msg, index) => ({
+            _id: msg.id ? `${msg.id}-${msg.sender}` : `${Date.now()}-${index}-${msg.sender}`,
+            text: msg.message,
+            createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            user: {
+              _id: msg.sender === 'user' ? 1 : 2,
+              name: msg.sender === 'user' ? 'User' : 'PlantBot',
+            },
+          }))
+          .sort((a, b) => {
+            // Sort by actual timestamp, ensuring proper chronological order
+            const timeA = a.createdAt.getTime();
+            const timeB = b.createdAt.getTime();
+            return timeA - timeB; // Oldest first (first message sent by user will be first)
+          });
+        
+        console.log('Loaded messages in chronological order:', convertedMessages.map(msg => ({
+          sender: msg.user.name,
+          text: msg.text.substring(0, 30) + '...',
+          timestamp: msg.createdAt.toISOString()
+        })));
+        
+        setMessages(convertedMessages);
+        setSessionId(sessionId);
+        setShowChatHistory(false);
+      } else {
+        Alert.alert('Error', 'Chat session not found');
+      }
+    } catch (error) {
+      console.error('Error loading chat session:', error);
+      Alert.alert('Error', 'Failed to load chat session');
+    }
+  };
+
+  // Delete a chat session
+  const deleteChatSession = async (sessionIdToDelete) => {
+    try {
+      const response = await apiService.deleteChatSession(sessionIdToDelete);
+      
+      if (response.data?.success) {
+        // Remove the deleted session from local state
+        setChatHistory(prev => prev.filter(session => session.session_id !== sessionIdToDelete));
+        
+        // If the deleted session was the current one, clear the current chat
+        if (sessionIdToDelete === sessionId) {
+          setMessages([]);
+          setSessionId(null);
+        }
+        
+        Alert.alert('Success', 'Chat session deleted successfully');
+      } else {
+        Alert.alert('Error', response.data?.message || 'Failed to delete chat session');
+      }
+    } catch (error) {
+      console.error('Error deleting chat session:', error);
+      Alert.alert('Error', 'Failed to delete chat session');
+    }
+  };
+
+  // Handle delete button press with confirmation
+  const handleDeleteChat = (sessionId) => {
+    Alert.alert(
+      'Delete Chat',
+      'Are you sure you want to delete this chat session? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => deleteChatSession(sessionId)
+        },
+      ]
+    );
   };
 
   // Optimized message component
@@ -320,27 +397,45 @@ const ChatboxScreen = () => {
                </Text>
              </View>
            ) : (
-                           <FlatList
-                data={chatHistory}
-                keyExtractor={(item) => item.session_id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[styles.chatHistoryItem, { borderBottomColor: theme.border }]}
-                    onPress={() => loadChatSession(item.session_id)}
-                  >
-                    <View style={styles.chatHistoryItemContent}>
-                      <Text style={[styles.chatHistoryItemTitle, { color: theme.text }]}>
-                        Chat Session {item.session_id}
-                      </Text>
-                      <Text style={[styles.chatHistoryItemSubtitle, { color: theme.subtext }]}>
-                        {item.messages?.length || 0} messages
-                      </Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
-                  </TouchableOpacity>
-                )}
-                showsVerticalScrollIndicator={false}
-              />
+                                                       <FlatList
+                 data={chatHistory}
+                 keyExtractor={(item) => item.session_id}
+                                  renderItem={({ item }) => {
+                    // Find the first user message in this chat session
+                    const firstUserMessage = item.messages?.find(msg => msg.sender === "user");
+                    const displayText = firstUserMessage?.message 
+                      ? (firstUserMessage.message.length > 50 
+                          ? firstUserMessage.message.substring(0, 50) + "..." 
+                          : firstUserMessage.message)
+                      : `Chat Session ${item.session_id}`;
+                    
+                    return (
+                      <View style={[styles.chatHistoryItem, { borderBottomColor: theme.border }]}>
+                        <TouchableOpacity
+                          style={styles.chatHistoryItemContent}
+                          onPress={() => loadChatSession(item.session_id)}
+                        >
+                          <View style={styles.chatHistoryItemTextContainer}>
+                            <Text style={[styles.chatHistoryItemTitle, { color: theme.text }]}>
+                              {displayText}
+                            </Text>
+                            <Text style={[styles.chatHistoryItemSubtitle, { color: theme.subtext }]}>
+                              {item.messages?.length || 0} messages
+                            </Text>
+                          </View>
+                          <Ionicons name="chevron-forward" size={20} color={theme.subtext} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.deleteButton}
+                          onPress={() => handleDeleteChat(item.session_id)}
+                        >
+                          <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  }}
+                 showsVerticalScrollIndicator={false}
+               />
            )}
          </View>
        )}
@@ -571,17 +666,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
   },
-  chatHistoryItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-  },
-  chatHistoryItemContent: {
-    flex: 1,
-  },
+     chatHistoryItem: {
+     flexDirection: 'row',
+     justifyContent: 'space-between',
+     alignItems: 'center',
+     paddingHorizontal: 20,
+     paddingVertical: 15,
+     borderBottomWidth: 1,
+   },
+   chatHistoryItemContent: {
+     flex: 1,
+     flexDirection: 'row',
+     justifyContent: 'space-between',
+     alignItems: 'center',
+   },
+   chatHistoryItemTextContainer: {
+     flex: 1,
+   },
+   deleteButton: {
+     padding: 8,
+     marginLeft: 10,
+   },
   chatHistoryItemTitle: {
     fontSize: 16,
     fontWeight: '500',

@@ -7,6 +7,24 @@ import { apiService, getBaseURLForImages } from '../../services/api';
 
 const { width } = Dimensions.get('window');
 
+// Standard symptoms and preventions for all diagnoses
+const getStandardSymptoms = () => [
+  'Leaves may change color, turning yellow, brown, or developing unusual spots or patterns.',
+  'The plant may wilt and lose firmness, even when there is enough water in the soil.',
+  'Growth may be stunted, causing the plant to remain smaller and weaker than normal.',
+  'Leaves may fall off prematurely, reducing the plant\'s ability to make food through photosynthesis.'
+];
+
+const getStandardPreventions = () => [
+  'Plant disease-resistant varieties to reduce the risk of infection.',
+  'Rotate crops each season to break the life cycle of diseases.',
+  'Space plants properly to allow good airflow and lower humidity levels.',
+  'Water plants at the base and avoid wetting the leaves.',
+  'Remove and dispose of any infected leaves, stems, or fruits as soon as they appear.',
+  'Clean and disinfect gardening tools regularly to stop the spread of diseases.',
+  'Improve soil health by adding compost and organic matter to strengthen plants.',
+];
+
 const ReportScreen = () => {
   const { theme } = useContext(ThemeContext);
   const navigation = useNavigation();
@@ -22,21 +40,8 @@ const ReportScreen = () => {
     disease: 'Blast',
     causes: 'Fungal infection (Magnaporthe oryzae)',
     description: 'Rice, a cereal grain, serves as the staple food for over half of the global population, especially in Asia and Africa, where ample soil facilitates its growth.',
-    symptoms: [
-      'Lesions on leaves, stems, and panicles',
-      'Dark spots with gray centers',
-      'Can lead to complete crop loss'
-    ],
-    preventions: [
-      'Plant resistant varieties.',
-      'Ensure proper field drainage to minimize waterlogged conditions.',
-      'Rotate crops to reduce pathogen buildup.',
-      'Timely removal of crop residues.',
-      'Avoid excessive nitrogen which increases susceptibility.',
-      'Use proper spacing to reduce humidity.',
-      'Monitor fields regularly for detection.',
-      'Apply fungicides preventively.',
-    ],
+    symptoms: getStandardSymptoms(),
+    preventions: getStandardPreventions(),
     confidence: null
   });
 
@@ -72,21 +77,8 @@ const ReportScreen = () => {
           disease: diseaseName,
           causes: 'AI-detected disease based on image analysis',
           description: `${cropName} is a common agricultural crop that can be affected by various diseases. This analysis was performed using machine learning to identify potential health issues.`,
-          symptoms: [
-            'AI-detected symptoms based on visual analysis',
-            'Please consult with an agricultural expert for detailed symptoms',
-            'Regular monitoring is recommended for early detection'
-          ],
-          preventions: [
-            'Consult with agricultural experts for specific treatment',
-            'Implement proper crop management practices',
-            'Monitor crop health regularly',
-            'Use appropriate pesticides if recommended',
-            'Maintain proper field conditions',
-            'Follow local agricultural guidelines',
-            'Consider crop rotation strategies',
-            'Ensure proper irrigation and drainage.',
-          ],
+          symptoms: getStandardSymptoms(),
+          preventions: getStandardPreventions(),
           confidence: parseFloat(predictionData.confidence), // Use actual confidence from API
           timestamp: predictionData.timestamp
         });
@@ -120,21 +112,8 @@ const ReportScreen = () => {
         disease: diseaseName,
         causes: 'AI-detected disease based on image analysis',
         description: `${cropName} is a common agricultural crop that can be affected by various diseases. This analysis was performed using machine learning to identify potential health issues.`,
-        symptoms: [
-          'AI-detected symptoms based on visual analysis',
-          'Please consult with an agricultural expert for detailed symptoms',
-          'Regular monitoring is recommended for early detection'
-        ],
-        preventions: [
-          'Consult with agricultural experts for specific treatment',
-          'Implement proper crop management practices',
-          'Monitor crop health regularly',
-          'Use appropriate pesticides if recommended',
-          'Maintain proper field conditions',
-          'Follow local agricultural guidelines',
-          'Consider crop rotation strategies',
-          'Ensure proper irrigation and drainage.',
-        ],
+        symptoms: getStandardSymptoms(),
+        preventions: getStandardPreventions(),
         confidence: predictionResult.confidence
       });
       
@@ -155,21 +134,8 @@ const ReportScreen = () => {
           disease: diagnosis.disease,
           causes: 'Historical diagnosis data',
           description: `${diagnosis.cropName} is a common agricultural crop that can be affected by various diseases. This is a historical diagnosis record.`,
-          symptoms: [
-            'Historical symptoms data',
-            'Please consult with an agricultural expert for detailed symptoms',
-            'Regular monitoring is recommended for early detection'
-          ],
-          preventions: [
-            'Consult with agricultural experts for specific treatment',
-            'Implement proper crop management practices',
-            'Monitor crop health regularly',
-            'Use appropriate pesticides if recommended',
-            'Maintain proper field conditions',
-            'Follow local agricultural guidelines',
-            'Consider crop rotation strategies',
-            'Ensure proper irrigation and drainage.',
-          ],
+          symptoms: getStandardSymptoms(),
+          preventions: getStandardPreventions(),
           confidence: diagnosis.confidence
         });
       }
@@ -191,21 +157,8 @@ const ReportScreen = () => {
           disease: diagnosisData.disease,
           causes: 'Historical diagnosis data',
           description: `${diagnosisData.cropName} is a common agricultural crop that can be affected by various diseases. This is a historical diagnosis record.`,
-          symptoms: [
-            'Historical symptoms data',
-            'Please consult with an agricultural expert for detailed symptoms',
-            'Regular monitoring is recommended for early detection'
-          ],
-          preventions: [
-            'Consult with agricultural experts for specific treatment',
-            'Implement proper crop management practices',
-            'Monitor crop health regularly',
-            'Use appropriate pesticides if recommended',
-            'Maintain proper field conditions',
-            'Follow local agricultural guidelines',
-            'Consider crop rotation strategies',
-            'Ensure proper irrigation and drainage.',
-          ],
+          symptoms: getStandardSymptoms(),
+          preventions: getStandardPreventions(),
           confidence: diagnosisData.confidence
         });
       }
@@ -291,9 +244,34 @@ const ReportScreen = () => {
             <Text style={[styles.infoLabel, {color: theme.subtext}]}>Disease:</Text>
             <Text style={[styles.infoValue, {color: theme.text}]}>{reportData.disease}</Text>
           </View>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, {color: theme.subtext}]}>Causes:</Text>
-            <Text style={[styles.infoValue, {color: theme.text}]}>{reportData.causes}</Text>
+        </View>
+      </View>
+
+      {/* Common Causes Section */}
+      <View style={[styles.sectionCard, {backgroundColor: theme.card}]}>
+        <View style={styles.cardHeader}>
+          <MaterialIcons name="science" size={24} color="#9C27B0" />
+          <Text style={[styles.cardTitle, {color: theme.text}]}>Common Disease Causes</Text>
+        </View>
+        <View style={styles.causesList}>
+          <View style={styles.causeItem}>
+            <View style={[styles.bulletPoint, {backgroundColor: '#9C27B0'}]} />
+            <Text style={[styles.causeText, {color: theme.text}]}>Waterlogging happens when excess water surrounds the roots, suffocating them and encouraging root rot.</Text>
+          </View>
+          
+          <View style={styles.causeItem}>
+            <View style={[styles.bulletPoint, {backgroundColor: '#2196F3'}]} />
+            <Text style={[styles.causeText, {color: theme.text}]}>Nutrient deficiencies, such as a lack of nitrogen, potassium, or iron, weaken a plant's overall health and resistance to disease.</Text>
+          </View>
+          
+          <View style={styles.causeItem}>
+            <View style={[styles.bulletPoint, {backgroundColor: '#FF9800'}]} />
+            <Text style={[styles.causeText, {color: theme.text}]}>Extreme temperatures, whether too high or too low, can damage plant tissues and make them more susceptible to infections.</Text>
+          </View>
+          
+          <View style={styles.causeItem}>
+            <View style={[styles.bulletPoint, {backgroundColor: '#4CAF50'}]} />
+            <Text style={[styles.causeText, {color: theme.text}]}>Poor soil drainage or aeration limits oxygen to the roots, creating favorable conditions for disease-causing organisms.</Text>
           </View>
         </View>
       </View>
@@ -493,6 +471,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   preventionText: {
+    fontSize: 14,
+    flex: 1,
+    lineHeight: 20,
+  },
+  causesList: {
+    gap: 12,
+  },
+  causeItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  causeText: {
     fontSize: 14,
     flex: 1,
     lineHeight: 20,

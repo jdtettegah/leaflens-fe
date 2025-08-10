@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { ThemeContext } from '../ThemeContext';
 import { apiService } from '../../services/api';
+import { authService } from '../../services/auth';
 
 const { width } = Dimensions.get('window');
 
@@ -189,13 +190,31 @@ const ProfileScreen = () => {
     navigation.goBack();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: () => console.log('Logout pressed') }
+        { 
+          text: 'Yes', 
+          style: 'destructive', 
+          onPress: async () => {
+            try {
+              // Perform logout
+              await authService.logout();
+              
+              // Navigate to Login screen
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          }
+        }
       ]
     );
   };

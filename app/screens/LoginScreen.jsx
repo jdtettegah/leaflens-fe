@@ -1,4 +1,5 @@
 import React, { useState, useContext } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -11,20 +12,77 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeContext } from '../ThemeContext';
+import { apiService } from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [focusedInput, setFocusedInput] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { theme } = useContext(ThemeContext);
 
-  const handleLogin = () => {
-    console.log('Logging in with:', email, password);
-    navigation.replace('MainTabs');
+  const validateForm = () => {
+    const newErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!emailRegex.test(email.trim())) {
+      newErrors.email = 'Invalid email format';
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogin = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const response = await apiService.login({
+        email: email.trim(),
+        password: password,
+      });
+
+      if (response.data.success) {
+        const { access, refresh } = response.data.message;
+
+        await AsyncStorage.setItem('accessToken', access);
+        await AsyncStorage.setItem('refreshToken', refresh);
+
+        // Get current user and save to AsyncStorage
+        const user = await apiService.getCurrentUser();
+
+        navigation.replace('MainTabs');
+      } else {
+        Alert.alert('Login Failed', 'Please check your credentials.');
+      }
+    } catch (error) {
+      let message = 'An error occurred while logging in.';
+      if (error.response?.data?.non_field_errors) {
+        const errMsg = error.response.data.non_field_errors[0];
+        message = errMsg.charAt(0).toUpperCase() + errMsg.slice(1);
+      }
+      Alert.alert('Login Failed', message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -46,53 +104,82 @@ const LoginScreen = ({ navigation }) => {
             />
             <Text style={[styles.title, { color: theme.text }]}>Welcome Back!</Text>
 
+            {/* Email Input */}
             <TextInput
               style={[
                 styles.input,
                 {
                   backgroundColor: theme.inputBackground,
                   color: theme.text,
-                  borderColor:
-                    focusedInput === 'Email' ? theme.primary : theme.border,
+                  borderColor: focusedInput === 'Email' ? theme.primary : theme.border,
                 },
               ]}
               placeholder="Email"
               placeholderTextColor={theme.placeholder}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                setErrors((prev) => ({ ...prev, email: '' }));
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               onFocus={() => setFocusedInput('Email')}
               onBlur={() => setFocusedInput(null)}
+              editable={!loading}
             />
+            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
 
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  backgroundColor: theme.inputBackground,
-                  color: theme.text,
-                  borderColor:
-                    focusedInput === 'Password' ? theme.primary : theme.border,
-                },
-              ]}
-              placeholder="Password"
-              placeholderTextColor={theme.placeholder}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              onFocus={() => setFocusedInput('Password')}
-              onBlur={() => setFocusedInput(null)}
-            />
+            {/* Password Input */}
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[
+                  styles.passwordInput,
+                  {
+                    backgroundColor: theme.inputBackground,
+                    color: theme.text,
+                    borderColor: focusedInput === 'Password' ? theme.primary : theme.border,
+                  },
+                ]}
+                placeholder="Password"
+                placeholderTextColor={theme.placeholder}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setErrors((prev) => ({ ...prev, password: '' }));
+                }}
+                secureTextEntry={!showPassword}
+                onFocus={() => setFocusedInput('Password')}
+                onBlur={() => setFocusedInput(null)}
+                editable={!loading}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword((prev) => !prev)}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={22}
+                  color={theme.placeholder}
+                />
+              </TouchableOpacity>
+            </View>
+            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
 
+            {/* Login Button */}
             <TouchableOpacity
               style={[styles.loginButton, { backgroundColor: theme.primary }]}
               onPress={handleLogin}
+              disabled={loading}
             >
-              <Text style={styles.loginText}>Log In</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.loginText}>Log In</Text>
+              )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
+            {/* Sign Up Link */}
+            <TouchableOpacity onPress={() => navigation.navigate('SignUp')} disabled={loading}>
               <Text style={[styles.signupText, { color: theme.text }]}>
                 Don’t have an account?{' '}
                 <Text style={{ color: theme.primary }}>Sign up</Text>
@@ -134,19 +221,44 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
+  passwordContainer: {
+    position: 'relative',
+    width: '100%',
+    marginVertical: 10,
+  },
+  passwordInput: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingRight: 45,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 14,
+  },
   loginButton: {
     marginTop: 20,
     paddingVertical: 12,
     width: '100%',
     borderRadius: 8,
+    alignItems: 'center',
   },
   loginText: {
     color: '#fff',
     fontSize: 18,
-    textAlign: 'center',
   },
   signupText: {
     marginTop: 16,
     fontSize: 14,
+  },
+  errorText: {
+    width: '100%',
+    color: 'red',
+    fontSize: 13,
+    marginTop: -6,
+    marginBottom: 6,
+    textAlign: 'left',
   },
 });

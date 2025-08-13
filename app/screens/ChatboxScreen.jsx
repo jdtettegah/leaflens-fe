@@ -329,7 +329,7 @@ const ChatboxScreen = () => {
             {quickQuestions.map((question, index) => (
               <TouchableOpacity
                 key={index}
-                style={[styles.quickQuestionButton, { backgroundColor: theme.quickQuestionBg || '#f8fafc' }]}
+                style={[styles.quickQuestionButton, { backgroundColor: theme.card || '#f8fafc' }]}
                 onPress={() => handleQuickQuestion(question)}
               >
                 <Ionicons 
